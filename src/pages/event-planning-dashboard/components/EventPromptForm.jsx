@@ -1,0 +1,184 @@
+import React, { useState } from 'react';
+import Icon from '../../../components/AppIcon';
+import Button from '../../../components/ui/Button';
+
+
+const EventPromptForm = ({ onGenerate, isGenerating }) => {
+  const [prompt, setPrompt] = useState('');
+  const [eventType, setEventType] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const eventTypes = [
+    'Corporate Conference',
+    'Wedding Celebration',
+    'Birthday Party',
+    'Product Launch',
+    'Academic Seminar',
+    'Networking Event',
+    'Charity Fundraiser',
+    'Music Concert',
+    'Art Exhibition',
+    'Sports Tournament'
+  ];
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!prompt?.trim()) {
+      newErrors.prompt = 'Please describe your event vision';
+    } else if (prompt?.trim()?.length < 20) {
+      newErrors.prompt = 'Please provide more details (minimum 20 characters)';
+    }
+    
+    if (!eventType) {
+      newErrors.eventType = 'Please select an event type';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors)?.length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    if (validateForm()) {
+      onGenerate({
+        prompt: prompt?.trim(),
+        eventType,
+        timestamp: new Date()?.toISOString()
+      });
+    }
+  };
+
+  const handlePromptChange = (e) => {
+    setPrompt(e?.target?.value);
+    if (errors?.prompt) {
+      setErrors(prev => ({ ...prev, prompt: '' }));
+    }
+  };
+
+  const handleEventTypeChange = (e) => {
+    setEventType(e?.target?.value);
+    if (errors?.eventType) {
+      setErrors(prev => ({ ...prev, eventType: '' }));
+    }
+  };
+
+  const examplePrompts = [
+    "Plan a tech startup product launch for 200 attendees with networking sessions and live demos",
+    "Organize a sustainable wedding celebration for 150 guests with outdoor ceremony and eco-friendly catering",
+    "Create a corporate annual conference with keynote speakers, breakout sessions, and team building activities"
+  ];
+
+  return (
+    <div className="bg-card rounded-lg border border-border p-6 shadow-card">
+      <div className="flex items-center space-x-3 mb-6">
+        <div className="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-lg">
+          <Icon name="Sparkles" size={20} className="text-primary" />
+        </div>
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">AI Event Planner</h2>
+          <p className="text-sm text-muted-foreground">Describe your vision and let AI create your perfect event plan</p>
+        </div>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Event Type Selection */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Event Type
+          </label>
+          <select
+            value={eventType}
+            onChange={handleEventTypeChange}
+            className={`w-full px-3 py-2 border rounded-md bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
+              errors?.eventType ? 'border-error' : 'border-border'
+            }`}
+          >
+            <option value="">Select event type...</option>
+            {eventTypes?.map((type) => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+          {errors?.eventType && (
+            <p className="mt-1 text-sm text-error">{errors?.eventType}</p>
+          )}
+        </div>
+
+        {/* Event Description */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Event Description
+          </label>
+          <textarea
+            value={prompt}
+            onChange={handlePromptChange}
+            placeholder="Describe your event vision in detail... Include audience size, venue preferences, key activities, budget range, and any special requirements."
+            rows={6}
+            className={`w-full px-3 py-2 border rounded-md bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none ${
+              errors?.prompt ? 'border-error' : 'border-border'
+            }`}
+          />
+          <div className="flex justify-between items-center mt-1">
+            {errors?.prompt ? (
+              <p className="text-sm text-error">{errors?.prompt}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {prompt?.length}/500 characters
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Example Prompts */}
+        <div>
+          <p className="text-sm font-medium text-foreground mb-2">Need inspiration? Try these examples:</p>
+          <div className="space-y-2">
+            {examplePrompts?.map((example, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => setPrompt(example)}
+                className="w-full text-left p-3 bg-muted hover:bg-muted/80 rounded-md text-sm text-muted-foreground hover:text-foreground transition-smooth"
+              >
+                <Icon name="Lightbulb" size={14} className="inline mr-2" />
+                {example}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Generate Button */}
+        <Button
+          type="submit"
+          variant="default"
+          size="lg"
+          fullWidth
+          loading={isGenerating}
+          iconName="Sparkles"
+          iconPosition="left"
+          disabled={isGenerating}
+        >
+          {isGenerating ? 'Generating Your Event Plan...' : 'Generate Event Plan'}
+        </Button>
+      </form>
+      {/* AI Features Info */}
+      <div className="mt-6 pt-6 border-t border-border">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="flex items-center space-x-2">
+            <Icon name="Calendar" size={16} className="text-primary" />
+            <span className="text-xs text-muted-foreground">Timeline Generation</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Icon name="CheckSquare" size={16} className="text-primary" />
+            <span className="text-xs text-muted-foreground">Task Management</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Icon name="DollarSign" size={16} className="text-primary" />
+            <span className="text-xs text-muted-foreground">Budget Estimation</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EventPromptForm;
