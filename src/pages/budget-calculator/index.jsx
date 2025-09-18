@@ -103,33 +103,42 @@ const BudgetCalculator = () => {
       return;
     }
 
-    const exportData = {
-      formData,
-      budgetData,
-      exportedAt: new Date()?.toISOString(),
-      summary: {
-        totalCost: budgetData?.grandTotal,
-        perGuest: formData?.audienceSize > 0 ? budgetData?.grandTotal / formData?.audienceSize : 0,
-        perHour: formData?.duration > 0 ? budgetData?.grandTotal / formData?.duration : 0
-      }
-    };
+    try {
+      const exportData = {
+        formData,
+        budgetData,
+        exportedAt: new Date()?.toISOString(),
+        summary: {
+          totalCost: budgetData?.grandTotal,
+          perGuest: formData?.audienceSize > 0 ? budgetData?.grandTotal / formData?.audienceSize : 0,
+          perHour: formData?.duration > 0 ? budgetData?.grandTotal / formData?.duration : 0
+        }
+      };
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `budget-estimate-${new Date()?.toISOString()?.split('T')?.[0]}.json`;
-    document.body?.appendChild(a);
-    a?.click();
-    document.body?.removeChild(a);
-    URL.revokeObjectURL(url);
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `budget-estimate-${new Date()?.toISOString()?.split('T')?.[0]}.json`;
+      document.body?.appendChild(a);
+      a?.click();
+      document.body?.removeChild(a);
+      URL.revokeObjectURL(url);
 
-    showSuccess('Budget exported successfully!');
+      showSuccess('Budget exported successfully!');
+    } catch (error) {
+      showError('Failed to export budget. Please try again.');
+    }
   };
 
   const handleAddScenario = () => {
     if (!budgetData) {
       showError('Please calculate a budget first');
+      return;
+    }
+
+    if (scenarios?.length >= 5) {
+      showError('Maximum 5 scenarios allowed for comparison');
       return;
     }
 
@@ -166,6 +175,54 @@ const BudgetCalculator = () => {
         grandTotal: scenario?.grandTotal
       });
     }
+  };
+
+  const handleExportComparison = async (scenariosData, insights) => {
+    try {
+      const comparisonData = {
+        scenarios: scenariosData,
+        insights,
+        exportedAt: new Date()?.toISOString(),
+        summary: {
+          totalScenarios: scenariosData?.length,
+          lowestCost: insights?.minCost,
+          highestCost: insights?.maxCost,
+          averageCost: insights?.avgCost,
+          potentialSavings: insights?.savings
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(comparisonData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `budget-comparison-${new Date()?.toISOString()?.split('T')?.[0]}.json`;
+      document.body?.appendChild(a);
+      a?.click();
+      document.body?.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showSuccess('Budget comparison exported successfully!');
+    } catch (error) {
+      showError('Failed to export comparison. Please try again.');
+    }
+  };
+
+  const handleShareScenarios = (scenariosData) => {
+    // This could be enhanced to save to a database and generate a shareable link
+    const shareData = {
+      scenarios: scenariosData,
+      sharedAt: new Date()?.toISOString()
+    };
+    
+    localStorage.setItem('sharedBudgetScenarios', JSON.stringify(shareData));
+    showSuccess('Scenarios prepared for sharing!');
+  };
+
+  const handleClearAllScenarios = () => {
+    setScenarios([]);
+    setActiveScenario(0);
+    showSuccess('All scenarios cleared');
   };
 
   const handleQuickAction = (action) => {
@@ -245,6 +302,9 @@ const BudgetCalculator = () => {
                   onRemoveScenario={handleRemoveScenario}
                   onSelectScenario={handleSelectScenario}
                   activeScenario={activeScenario}
+                  onExportComparison={handleExportComparison}
+                  onShareScenarios={handleShareScenarios}
+                  onClearAll={handleClearAllScenarios}
                 />
               )}
             </div>

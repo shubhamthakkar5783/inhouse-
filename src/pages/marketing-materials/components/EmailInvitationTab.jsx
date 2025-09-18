@@ -3,13 +3,18 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import { EmailService } from '../../../services/emailService';
+import { validateEmail } from '../../../utils/validation';
 
 const EmailInvitationTab = () => {
   const [selectedTone, setSelectedTone] = useState('formal');
   const [selectedTemplate, setSelectedTemplate] = useState('corporate');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [generatedContent, setGeneratedContent] = useState(null);
+  const [emailErrors, setEmailErrors] = useState({});
+  const [sendResult, setSendResult] = useState(null);
 
   const toneOptions = [
     { value: 'formal', label: 'Formal' },
@@ -20,37 +25,81 @@ const EmailInvitationTab = () => {
 
   const templateOptions = [
     { value: 'corporate', label: 'Corporate Event' },
-    { value: 'birthday', label: 'Birthday Party' },
+    { value: 'Birthday Party', label: 'Birthday Party' },
     { value: 'wedding', label: 'Wedding Celebration' },
     { value: 'conference', label: 'Conference/Seminar' },
     { value: 'networking', label: 'Networking Event' }
   ];
 
-  const mockEmailContent = {
-    formal: {
-      subject: "Invitation to Annual Tech Conference 2025",
-      content: `Dear Valued Guest,\n\nWe cordially invite you to attend our Annual Tech Conference 2025, scheduled for March 15th, 2025, at the Grand Convention Center.\n\nThis prestigious event will feature:\n• Keynote speeches from industry leaders\n• Interactive workshops and panel discussions\n• Networking opportunities with professionals\n• Exhibition of cutting-edge technologies\n\nEvent Details:\nDate: March 15th, 2025\nTime: 9:00 AM - 6:00 PM\nVenue: Grand Convention Center, Downtown\nDress Code: Business Formal\n\nPlease confirm your attendance by March 10th, 2025.\n\nWe look forward to your presence at this remarkable event.\n\nSincerely,\nEvent Planning Committee\nSmart Event Planner`
-    },
-    informal: {
-      subject: "You\'re Invited! 🎉 Annual Tech Conference 2025",
-      content: `Hey there!\n\nGuess what? You're invited to our awesome Annual Tech Conference 2025! 🚀\n\nWe're throwing this amazing event on March 15th at the Grand Convention Center, and we'd love to have you there!\n\nWhat's in store:\n• Mind-blowing keynotes from tech rockstars\n• Hands-on workshops (bring your laptop!)\n• Epic networking sessions with free coffee ☕\n• The coolest tech demos you've ever seen\n\nQuick Details:\n📅 March 15th, 2025\n⏰ 9:00 AM - 6:00 PM\n📍 Grand Convention Center, Downtown\n👔 Business casual (comfort is key!)\n\nJust hit reply and let us know you're coming by March 10th!\n\nCan't wait to see you there!\n\nCheers,\nThe Event Team 🎊\nSmart Event Planner`
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setSendResult(null);
+    
+    try {
+      // Create mock event data based on template selection
+      const eventData = {
+        eventType: selectedTemplate,
+        prompt: `Generate email invitation for ${selectedTemplate} event with professional details and engaging content.`,
+        timestamp: new Date()?.toISOString()
+      };
+
+      const content = EmailService.generateEmailContent(eventData, selectedTone);
+      setGeneratedContent(content);
+    } catch (error) {
+      console.error('Email generation failed:', error);
+      alert('Failed to generate email content. Please try again.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    
-    // Simulate AI generation delay
-    setTimeout(() => {
-      const content = mockEmailContent?.[selectedTone] || mockEmailContent?.formal;
-      setGeneratedContent(content);
-      setIsGenerating(false);
-    }, 2000);
+  const handleSendEmail = async () => {
+    // Validate email first
+    const emailValidation = validateEmail(recipientEmail);
+    if (!emailValidation.isValid) {
+      setEmailErrors({ email: emailValidation.error });
+      return;
+    }
+
+    setEmailErrors({});
+    setIsSending(true);
+    setSendResult(null);
+
+    try {
+      const eventData = {
+        eventType: selectedTemplate,
+        prompt: generatedContent?.textContent || 'Event invitation',
+        timestamp: new Date()?.toISOString()
+      };
+
+      const result = await EmailService.sendEventInvitation(
+        emailValidation.sanitizedEmail,
+        eventData,
+        selectedTone
+      );
+
+      setSendResult(result);
+      
+      if (result.success) {
+        setRecipientEmail(''); // Clear email field on success
+      }
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      setSendResult({
+        success: false,
+        error: 'Failed to send email. Please check your connection and try again.'
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  const handleSendEmail = () => {
-    // Mock send functionality
-    alert(`Email would be sent to: ${recipientEmail}`);
+  const handleEmailChange = (e) => {
+    setRecipientEmail(e?.target?.value);
+    if (emailErrors?.email) {
+      setEmailErrors({});
+    }
+    setSendResult(null);
   };
 
   const handleCopyContent = () => {
@@ -91,10 +140,40 @@ const EmailInvitationTab = () => {
           iconName="Sparkles"
           iconPosition="left"
           className="w-full md:w-auto"
+          disabled={!selectedTone || !selectedTemplate}
         >
           {isGenerating ? 'Generating Email...' : 'Generate Invitation'}
         </Button>
       </div>
+      
+      {/* Send Result Display */}
+      {sendResult && (
+        <div className={`p-4 rounded-lg border ${
+          sendResult.success 
+            ? 'bg-success/10 border-success/20 text-success' 
+            : 'bg-error/10 border-error/20 text-error'
+        }`}>
+          <div className="flex items-center space-x-2">
+            <Icon 
+              name={sendResult.success ? "CheckCircle2" : "AlertCircle"} 
+              size={16} 
+            />
+            <span className="text-sm font-medium">
+              {sendResult.success ? 'Email sent successfully!' : 'Failed to send email'}
+            </span>
+          </div>
+          {sendResult.messageId && (
+            <p className="text-xs mt-1 opacity-75">
+              Message ID: {sendResult.messageId}
+            </p>
+          )}
+          {sendResult.error && (
+            <p className="text-xs mt-1">
+              {sendResult.error}
+            </p>
+          )}
+        </div>
+      )}
       {/* Generated Content */}
       {generatedContent && (
         <div className="bg-card rounded-lg border border-border p-6">
@@ -141,17 +220,20 @@ const EmailInvitationTab = () => {
                 label="Recipient Email"
                 placeholder="Enter recipient email address"
                 value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e?.target?.value)}
+                onChange={handleEmailChange}
+                error={emailErrors?.email}
+                required
               />
             </div>
             <div className="flex items-end">
               <Button
                 onClick={handleSendEmail}
-                disabled={!recipientEmail}
+                disabled={!recipientEmail || isSending || !generatedContent}
+                loading={isSending}
                 iconName="Send"
                 iconPosition="left"
               >
-                Send Email
+                {isSending ? 'Sending...' : 'Send Email'}
               </Button>
             </div>
           </div>
@@ -165,8 +247,12 @@ const EmailInvitationTab = () => {
           </div>
           <h3 className="text-lg font-medium text-foreground mb-2">No Email Generated Yet</h3>
           <p className="text-muted-foreground mb-4">
-            Select your preferred tone and template, then click generate to create your invitation email.
+            Select your preferred tone and event template, then click generate to create a personalized invitation email.
           </p>
+          <div className="text-xs text-muted-foreground">
+            <Icon name="Info" size={12} className="inline mr-1" />
+            Email content will automatically adapt based on your event type and tone selection.
+          </div>
         </div>
       )}
     </div>

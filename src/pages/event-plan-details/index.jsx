@@ -23,17 +23,31 @@ const EventPlanDetails = () => {
     const loadEventData = () => {
       setIsLoading(true);
       
-      // Simulate API call
-      setTimeout(() => {
+      try {
+        // Check for saved event data first
+        const savedEventData = localStorage.getItem('eventPlanningData');
+        let eventDataToUse = null;
+        
+        if (savedEventData) {
+          try {
+            eventDataToUse = JSON.parse(savedEventData);
+          } catch (parseError) {
+            console.error('Error parsing saved event data:', parseError);
+            localStorage.removeItem('eventPlanningData'); // Clear corrupted data
+          }
+        }
+        
+        // Use saved data or fallback to mock data
         const mockEventData = {
-          id: 'evt_001',
-          name: 'Annual Tech Conference 2025',
+          id: eventDataToUse?.id || 'evt_001',
+          name: eventDataToUse?.eventType || 'Annual Tech Conference 2025',
           date: '2025-03-15',
           time: '09:00',
           location: 'Grand Convention Center, San Francisco',
           attendees: 500,
           budget: 75000,
           status: 'planning',
+          description: eventDataToUse?.prompt || 'A comprehensive technology conference featuring industry leaders and innovative solutions.',
           contacts: [
             {
               name: 'Sarah Johnson',
@@ -208,54 +222,191 @@ const EventPlanDetails = () => {
         setEventData(mockEventData);
         setTimelineData(mockTimelineData);
         setProgressData(mockProgressData);
-        setIsLoading(false);
         
         showInfo('Event plan loaded successfully');
-      }, 1000);
+      } catch (error) {
+        console.error('Error loading event data:', error);
+        showError('Failed to load event plan. Using default data.');
+        
+        // Fallback to basic mock data
+        setEventData({
+          id: 'evt_001',
+          name: 'Sample Event',
+          date: '2025-03-15',
+          time: '09:00',
+          location: 'TBD',
+          attendees: 50,
+          budget: 10000,
+          status: 'planning',
+          contacts: []
+        });
+        setTimelineData([]);
+        setProgressData({
+          phases: [],
+          completedTasks: 0,
+          totalTasks: 0,
+          daysRemaining: 30,
+          nextActions: []
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadEventData();
   }, [showInfo]);
 
   const handleUpdateEvent = (updatedData) => {
-    setEventData(updatedData);
-    showSuccess('Event details updated successfully');
+    try {
+      setEventData(updatedData);
+      
+      // Save updated data to localStorage
+      const currentSavedData = localStorage.getItem('eventPlanningData');
+      if (currentSavedData) {
+        try {
+          const parsedData = JSON.parse(currentSavedData);
+          const updatedSavedData = {
+            ...parsedData,
+            eventName: updatedData.name,
+            eventDate: updatedData.date,
+            eventTime: updatedData.time,
+            eventLocation: updatedData.location,
+            expectedAttendees: updatedData.attendees
+          };
+          localStorage.setItem('eventPlanningData', JSON.stringify(updatedSavedData));
+        } catch (error) {
+          console.error('Error updating saved data:', error);
+        }
+      }
+      
+      showSuccess('Event details updated successfully');
+    } catch (error) {
+      console.error('Error updating event:', error);
+      showError('Failed to update event details');
+    }
   };
 
   const handleUpdateActivity = (activityId, updatedActivity) => {
-    setTimelineData(prev => 
-      prev?.map(item => 
-        item?.id === activityId ? { ...item, ...updatedActivity } : item
-      )
-    );
-    showSuccess('Activity updated successfully');
+    try {
+      setTimelineData(prev => 
+        prev?.map(item => 
+          item?.id === activityId ? { ...item, ...updatedActivity, updatedAt: new Date()?.toISOString() } : item
+        )
+      );
+      showSuccess('Activity updated successfully');
+    } catch (error) {
+      console.error('Error updating activity:', error);
+      showError('Failed to update activity');
+    }
   };
 
   const handleAddActivity = () => {
-    showInfo('Add activity feature coming soon');
+    try {
+      const newActivity = {
+        id: `tl_${Date.now()}`,
+        title: 'New Activity',
+        type: 'setup',
+        startTime: '10:00',
+        duration: 60,
+        location: 'TBD',
+        attendees: 10,
+        description: 'New activity description',
+        resources: [],
+        assignedTo: [],
+        notes: '',
+        createdAt: new Date()?.toISOString()
+      };
+      
+      setTimelineData(prev => [...prev, newActivity]);
+      showSuccess('New activity added to timeline');
+    } catch (error) {
+      console.error('Error adding activity:', error);
+      showError('Failed to add new activity');
+    }
   };
 
   const handleExport = async (format) => {
-    showInfo(`Exporting plan as ${format?.toUpperCase()}...`);
-    // Simulate export process
-    setTimeout(() => {
+    try {
+      showInfo(`Exporting plan as ${format?.toUpperCase()}...`);
+      
+      const exportData = {
+        eventData,
+        timelineData,
+        progressData,
+        exportFormat: format,
+        exportedAt: new Date()?.toISOString()
+      };
+      
+      // Simulate export process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Create and download file
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
+        type: format === 'json' ? 'application/json' : 'text/plain' 
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `event-plan-${eventData?.name?.replace(/\s+/g, '-')?.toLowerCase()}.${format}`;
+      document.body?.appendChild(a);
+      a?.click();
+      document.body?.removeChild(a);
+      URL.revokeObjectURL(url);
+      
       showSuccess(`Plan exported as ${format?.toUpperCase()} successfully`);
-    }, 2000);
+    } catch (error) {
+      console.error('Export failed:', error);
+      showError(`Failed to export plan as ${format?.toUpperCase()}`);
+    }
   };
 
   const handleRegenerate = async () => {
-    showInfo('Generating alternative plan...');
-    // Simulate regeneration process
-    setTimeout(() => {
+    try {
+      showInfo('Generating alternative plan...');
+      
+      // Simulate regeneration process
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Add some variation to the timeline
+      const regeneratedTimeline = timelineData?.map(item => ({
+        ...item,
+        duration: item.duration + (Math.random() > 0.5 ? 15 : -15),
+        updatedAt: new Date()?.toISOString()
+      }));
+      
+      setTimelineData(regeneratedTimeline);
       showSuccess('Alternative plan generated successfully');
-    }, 3000);
+    } catch (error) {
+      console.error('Regeneration failed:', error);
+      showError('Failed to generate alternative plan');
+    }
   };
 
   const handleCreateTasks = () => {
-    showSuccess('Redirecting to task board...');
-    setTimeout(() => {
-      window.location.href = '/task-board-management';
-    }, 1000);
+    try {
+      // Save current event context for task creation
+      const taskContext = {
+        eventId: eventData?.id,
+        eventName: eventData?.name,
+        eventDate: eventData?.date,
+        timelineActivities: timelineData?.map(item => ({
+          id: item.id,
+          title: item.title,
+          type: item.type,
+          assignedTo: item.assignedTo
+        }))
+      };
+      
+      localStorage.setItem('taskCreationContext', JSON.stringify(taskContext));
+      
+      showSuccess('Redirecting to task board...');
+      setTimeout(() => {
+        window.location.href = '/task-board-management';
+      }, 1000);
+    } catch (error) {
+      console.error('Error preparing task creation:', error);
+      showError('Failed to prepare task creation');
+    }
   };
 
   const handleQuickAction = (actionType) => {

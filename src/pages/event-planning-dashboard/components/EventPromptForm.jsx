@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { validateEventDescription, sanitizeInput } from '../../../utils/validation';
 
 
 const EventPromptForm = ({ onGenerate, isGenerating }) => {
   const [prompt, setPrompt] = useState('');
   const [eventType, setEventType] = useState('');
   const [errors, setErrors] = useState({});
+  const [isValidating, setIsValidating] = useState(false);
 
   const eventTypes = [
     'Corporate Conference',
@@ -24,10 +26,10 @@ const EventPromptForm = ({ onGenerate, isGenerating }) => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!prompt?.trim()) {
-      newErrors.prompt = 'Please describe your event vision';
-    } else if (prompt?.trim()?.length < 20) {
-      newErrors.prompt = 'Please provide more details (minimum 20 characters)';
+    // Validate event description
+    const descriptionValidation = validateEventDescription(prompt, eventType);
+    if (!descriptionValidation.isValid) {
+      newErrors.prompt = descriptionValidation.errors[0]; // Show first error
     }
     
     if (!eventType) {
@@ -50,9 +52,23 @@ const EventPromptForm = ({ onGenerate, isGenerating }) => {
   };
 
   const handlePromptChange = (e) => {
-    setPrompt(e?.target?.value);
+    const sanitizedValue = sanitizeInput(e?.target?.value);
+    setPrompt(sanitizedValue);
+    
     if (errors?.prompt) {
       setErrors(prev => ({ ...prev, prompt: '' }));
+    }
+    
+    // Real-time validation for better UX
+    if (sanitizedValue.length > 20 && eventType) {
+      setIsValidating(true);
+      setTimeout(() => {
+        const validation = validateEventDescription(sanitizedValue, eventType);
+        if (!validation.isValid) {
+          setErrors(prev => ({ ...prev, prompt: validation.errors[0] }));
+        }
+        setIsValidating(false);
+      }, 500);
     }
   };
 
@@ -107,11 +123,17 @@ const EventPromptForm = ({ onGenerate, isGenerating }) => {
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Event Description
+            {isValidating && (
+              <span className="ml-2 text-xs text-primary">
+                <Icon name="Loader2" size={12} className="inline animate-spin mr-1" />
+                Validating...
+              </span>
+            )}
           </label>
           <textarea
             value={prompt}
             onChange={handlePromptChange}
-            placeholder="Describe your event vision in detail... Include audience size, venue preferences, key activities, budget range, and any special requirements."
+            placeholder={`Describe your ${eventType || 'event'} vision in detail... Include audience size, venue preferences, key activities, budget range, and any special requirements. Be specific and detailed for better AI-generated plans.`}
             rows={6}
             className={`w-full px-3 py-2 border rounded-md bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none ${
               errors?.prompt ? 'border-error' : 'border-border'
@@ -119,10 +141,18 @@ const EventPromptForm = ({ onGenerate, isGenerating }) => {
           />
           <div className="flex justify-between items-center mt-1">
             {errors?.prompt ? (
-              <p className="text-sm text-error">{errors?.prompt}</p>
+              <div className="flex items-center text-sm text-error">
+                <Icon name="AlertCircle" size={14} className="mr-1" />
+                {errors?.prompt}
+              </div>
             ) : (
-              <p className="text-xs text-muted-foreground">
-                {prompt?.length}/500 characters
+              <p className={`text-xs ${
+                prompt?.length < 20 ? 'text-warning' : 
+                prompt?.length > 1500 ? 'text-error' : 'text-muted-foreground'
+              }`}>
+                {prompt?.length}/2000 characters
+                {prompt?.length < 20 && ' (minimum 20 required)'}
+                {prompt?.length > 1500 && ' (approaching limit)'}
               </p>
             )}
           </div>
@@ -152,12 +182,14 @@ const EventPromptForm = ({ onGenerate, isGenerating }) => {
           variant="default"
           size="lg"
           fullWidth
-          loading={isGenerating}
+          loading={isGenerating || isValidating}
           iconName="Sparkles"
           iconPosition="left"
-          disabled={isGenerating}
+          disabled={isGenerating || isValidating}
         >
-          {isGenerating ? 'Generating Your Event Plan...' : 'Generate Event Plan'}
+          {isGenerating ? 'Generating Your Event Plan...' : 
+           isValidating ? 'Validating Description...' : 
+           'Generate Event Plan'}
         </Button>
       </form>
       {/* AI Features Info */}
