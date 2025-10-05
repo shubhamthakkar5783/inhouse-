@@ -72,19 +72,22 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
             {navigationItems?.map((item) => (
-              <a
-                key={item?.path}
-                href={item?.path}
-                title={item?.tooltip}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-smooth hover:bg-muted ${
-                  isActivePath(item?.path)
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon name={item?.icon} size={16} />
-                <span>{item?.label}</span>
-              </a>
+              <div key={item?.path} className="relative group">
+                <a
+                  href={item?.path}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-smooth hover:bg-muted ${
+                    isActivePath(item?.path)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon name={item?.icon} size={16} />
+                  <span>{item?.label}</span>
+                </a>
+                <div className="hidden group-hover:block absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-1300 bg-card border border-border rounded shadow-card px-3 py-2 text-xs text-foreground whitespace-nowrap pointer-events-none">
+                  {item?.tooltip}
+                </div>
+              </div>
             ))}
           </nav>
 

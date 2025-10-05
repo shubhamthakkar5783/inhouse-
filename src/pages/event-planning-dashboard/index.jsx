@@ -9,6 +9,7 @@ import GeneratedContentCard from './components/GeneratedContentCard';
 import ProgressOverview from './components/ProgressOverview';
 import QuickAccessPanel from './components/QuickAccessPanel';
 import EmptyState from './components/EmptyState';
+import { eventService } from '../../services/eventService';
 
 const EventPlanningDashboard = () => {
   const navigate = useNavigate();
@@ -62,11 +63,11 @@ const EventPlanningDashboard = () => {
       progress: 100,
       lastUpdated: new Date(Date.now() - 7200000)?.toISOString(),
       items: [
-        'Venue: $5,000',
-        'Catering: $8,000',
-        'Speakers: $3,000',
-        'Marketing: $1,500',
-        'Total: $17,500'
+        'Venue: ₹4,15,000',
+        'Catering: ₹6,64,000',
+        'Speakers: ₹2,49,000',
+        'Marketing: ₹1,24,500',
+        'Total: ₹14,52,500'
       ]
     },
     {
@@ -88,18 +89,27 @@ const EventPlanningDashboard = () => {
   ];
 
   useEffect(() => {
-    // Check if there's existing event data in localStorage
-    const savedEventData = localStorage.getItem('eventPlanningData');
-    if (savedEventData) {
+    let isMounted = true;
+
+    const loadEvents = async () => {
       try {
-        const parsedData = JSON.parse(savedEventData);
-        setEventData(parsedData);
-        setHasGeneratedContent(true);
-        setGeneratedContent(mockGeneratedContent);
+        const events = await eventService.getAllEvents();
+        if (isMounted && events && events.length > 0) {
+          const latestEvent = events[0];
+          setEventData(latestEvent);
+          setHasGeneratedContent(true);
+          setGeneratedContent(mockGeneratedContent);
+        }
       } catch (error) {
-        console.error('Error parsing saved event data:', error);
+        console.error('Error loading events:', error);
       }
-    }
+    };
+
+    loadEvents();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleGenerateEvent = async (formData) => {
@@ -107,27 +117,30 @@ const EventPlanningDashboard = () => {
     const loadingId = showLoading('Generating your event plan with AI...');
 
     try {
-      // Simulate AI processing time
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      const newEventData = {
-        ...formData,
-        id: Date.now(),
-        createdAt: new Date()?.toISOString(),
-        status: 'active'
-      };
+      const savedEvent = await eventService.createEvent({
+        eventName: formData.eventName || formData.eventType || 'New Event',
+        eventType: formData.eventType,
+        description: formData.description,
+        date: formData.date,
+        time: formData.time,
+        location: formData.location,
+        city: formData.city,
+        venueType: formData.venueType,
+        audienceSize: formData.audienceSize,
+        duration: formData.duration
+      });
 
-      setEventData(newEventData);
+      setEventData(savedEvent);
       setGeneratedContent(mockGeneratedContent);
       setHasGeneratedContent(true);
 
-      // Save to localStorage
-      localStorage.setItem('eventPlanningData', JSON.stringify(newEventData));
-
       dismissNotification(loadingId);
-      showSuccess('Event plan generated successfully! 🎉');
+      showSuccess('Event plan generated and saved successfully!');
 
     } catch (error) {
+      console.error('Error creating event:', error);
       dismissNotification(loadingId);
       showError('Failed to generate event plan. Please try again.');
     } finally {

@@ -7,19 +7,14 @@ const BudgetComparison = ({
   onAddScenario, 
   onRemoveScenario, 
   onSelectScenario,
-  activeScenario = 0,
-  onExportComparison,
-  onShareScenarios,
-  onClearAll
+  activeScenario = 0 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     })?.format(amount);
@@ -55,34 +50,6 @@ const BudgetComparison = ({
   };
 
   const insights = getComparisonInsights();
-
-  const handleExportComparison = async () => {
-    if (!onExportComparison) return;
-    
-    setIsExporting(true);
-    try {
-      await onExportComparison(scenarios, insights);
-    } catch (error) {
-      console.error('Export failed:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleShareScenarios = () => {
-    if (onShareScenarios) {
-      onShareScenarios(scenarios);
-    }
-    setShareModalOpen(true);
-  };
-
-  const handleClearAll = () => {
-    if (window.confirm('Are you sure you want to clear all scenarios? This action cannot be undone.')) {
-      if (onClearAll) {
-        onClearAll();
-      }
-    }
-  };
 
   if (scenarios?.length === 0) {
     return (
@@ -324,93 +291,32 @@ const BudgetComparison = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={handleExportComparison}
-            loading={isExporting}
+            onClick={() => {/* Export comparison */}}
             iconName="Download"
             iconPosition="left"
-            disabled={scenarios?.length === 0}
           >
-            {isExporting ? 'Exporting...' : 'Export Comparison'}
+            Export Comparison
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={handleShareScenarios}
+            onClick={() => {/* Share scenarios */}}
             iconName="Share2"
             iconPosition="left"
-            disabled={scenarios?.length === 0}
           >
             Share Scenarios
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={handleClearAll}
+            onClick={() => {/* Clear all */}}
             iconName="Trash2"
             iconPosition="left"
-            disabled={scenarios?.length === 0}
-            className="text-error hover:text-error"
           >
             Clear All
           </Button>
         </div>
-        
-        {scenarios?.length > 0 && (
-          <div className="mt-3 text-xs text-muted-foreground">
-            <Icon name="Info" size={12} className="inline mr-1" />
-            Compare up to 5 scenarios to find the best option for your event budget.
-          </div>
-        )}
       </div>
-      
-      {/* Share Modal */}
-      {shareModalOpen && (
-        <div className="fixed inset-0 z-1200 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShareModalOpen(false)} />
-          <div className="relative bg-card rounded-lg shadow-modal w-full max-w-md mx-4 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Share Budget Scenarios</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShareModalOpen(false)}
-                className="w-8 h-8"
-              >
-                <Icon name="X" size={16} />
-              </Button>
-            </div>
-            
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                fullWidth
-                onClick={() => {
-                  navigator.clipboard?.writeText(window.location?.href);
-                  alert('Link copied to clipboard!');
-                }}
-                iconName="Copy"
-                iconPosition="left"
-              >
-                Copy Share Link
-              </Button>
-              
-              <Button
-                variant="outline"
-                fullWidth
-                onClick={() => {
-                  const subject = 'Budget Comparison - Smart Event Planner';
-                  const body = `Check out these budget scenarios: ${window.location?.href}`;
-                  window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-                }}
-                iconName="Mail"
-                iconPosition="left"
-              >
-                Share via Email
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
