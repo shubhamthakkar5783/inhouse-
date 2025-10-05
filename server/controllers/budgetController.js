@@ -1,9 +1,9 @@
-const BudgetModel = require('../models/budgetModel');
+const { allQuery, getQuery, runQuery } = require('../database');
 
 const budgetController = {
   getAllBudgets: async (req, res) => {
     try {
-      const budgets = await BudgetModel.getAll();
+      const budgets = await allQuery('SELECT * FROM budgets ORDER BY created_at DESC');
       res.json({ success: true, data: budgets });
     } catch (error) {
       console.error('Error getting budgets:', error);
@@ -13,7 +13,7 @@ const budgetController = {
 
   getBudgetById: async (req, res) => {
     try {
-      const budget = await BudgetModel.findById(req.params.id);
+      const budget = await getQuery('SELECT * FROM budgets WHERE id = ?', [req.params.id]);
       if (!budget) {
         return res.status(404).json({ success: false, error: 'Budget not found' });
       }
@@ -26,7 +26,7 @@ const budgetController = {
 
   getBudgetByEventId: async (req, res) => {
     try {
-      const budget = await BudgetModel.findByEventId(req.params.eventId);
+      const budget = await getQuery('SELECT * FROM budgets WHERE event_id = ?', [req.params.eventId]);
       if (!budget) {
         return res.status(404).json({ success: false, error: 'Budget not found for this event' });
       }
@@ -39,8 +39,25 @@ const budgetController = {
 
   createBudget: async (req, res) => {
     try {
-      const budgetId = await BudgetModel.create(req.body);
-      const budget = await BudgetModel.findById(budgetId);
+      const {
+        event_id,
+        venue_total = 0,
+        catering_total = 0,
+        services_total = 0,
+        miscellaneous_total = 0,
+        grand_total = 0,
+        budget_data = null
+      } = req.body;
+
+      const result = await runQuery(
+        `INSERT INTO budgets (
+          event_id, venue_total, catering_total, services_total,
+          miscellaneous_total, grand_total, budget_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [event_id, venue_total, catering_total, services_total, miscellaneous_total, grand_total, JSON.stringify(budget_data)]
+      );
+
+      const budget = await getQuery('SELECT * FROM budgets WHERE id = ?', [result.id]);
       res.status(201).json({ success: true, data: budget });
     } catch (error) {
       console.error('Error creating budget:', error);
@@ -50,8 +67,25 @@ const budgetController = {
 
   updateBudget: async (req, res) => {
     try {
-      await BudgetModel.update(req.params.id, req.body);
-      const budget = await BudgetModel.findById(req.params.id);
+      const {
+        venue_total,
+        catering_total,
+        services_total,
+        miscellaneous_total,
+        grand_total,
+        budget_data
+      } = req.body;
+
+      await runQuery(
+        `UPDATE budgets SET
+          venue_total = ?, catering_total = ?, services_total = ?,
+          miscellaneous_total = ?, grand_total = ?, budget_data = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?`,
+        [venue_total, catering_total, services_total, miscellaneous_total, grand_total, JSON.stringify(budget_data), req.params.id]
+      );
+
+      const budget = await getQuery('SELECT * FROM budgets WHERE id = ?', [req.params.id]);
       res.json({ success: true, data: budget });
     } catch (error) {
       console.error('Error updating budget:', error);
@@ -61,7 +95,7 @@ const budgetController = {
 
   deleteBudget: async (req, res) => {
     try {
-      await BudgetModel.delete(req.params.id);
+      await runQuery('DELETE FROM budgets WHERE id = ?', [req.params.id]);
       res.json({ success: true, message: 'Budget deleted successfully' });
     } catch (error) {
       console.error('Error deleting budget:', error);

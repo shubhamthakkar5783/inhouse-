@@ -254,7 +254,7 @@ const EventPlanDetails = () => {
     };
 
     loadEventData();
-  }, [showInfo]);
+  }, []);
 
   const handleUpdateEvent = (updatedData) => {
     try {

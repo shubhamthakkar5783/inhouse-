@@ -1,9 +1,9 @@
-const UserModel = require('../models/userModel');
+const { allQuery, getQuery, runQuery } = require('../database');
 
 const userController = {
   getAllUsers: async (req, res) => {
     try {
-      const users = await UserModel.getAll();
+      const users = await allQuery('SELECT * FROM users ORDER BY created_at DESC');
       res.json({ success: true, data: users });
     } catch (error) {
       console.error('Error getting users:', error);
@@ -13,7 +13,7 @@ const userController = {
 
   getUserById: async (req, res) => {
     try {
-      const user = await UserModel.findById(req.params.id);
+      const user = await getQuery('SELECT * FROM users WHERE id = ?', [req.params.id]);
       if (!user) {
         return res.status(404).json({ success: false, error: 'User not found' });
       }
@@ -26,8 +26,12 @@ const userController = {
 
   createUser: async (req, res) => {
     try {
-      const userId = await UserModel.create(req.body);
-      const user = await UserModel.findById(userId);
+      const { username, email, password, full_name, phone } = req.body;
+      const result = await runQuery(
+        'INSERT INTO users (username, email, password, full_name, phone) VALUES (?, ?, ?, ?, ?)',
+        [username, email, password, full_name, phone]
+      );
+      const user = await getQuery('SELECT * FROM users WHERE id = ?', [result.id]);
       res.status(201).json({ success: true, data: user });
     } catch (error) {
       console.error('Error creating user:', error);
@@ -37,8 +41,12 @@ const userController = {
 
   updateUser: async (req, res) => {
     try {
-      await UserModel.update(req.params.id, req.body);
-      const user = await UserModel.findById(req.params.id);
+      const { username, email, full_name, phone } = req.body;
+      await runQuery(
+        'UPDATE users SET username = ?, email = ?, full_name = ?, phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [username, email, full_name, phone, req.params.id]
+      );
+      const user = await getQuery('SELECT * FROM users WHERE id = ?', [req.params.id]);
       res.json({ success: true, data: user });
     } catch (error) {
       console.error('Error updating user:', error);
@@ -48,7 +56,7 @@ const userController = {
 
   deleteUser: async (req, res) => {
     try {
-      await UserModel.delete(req.params.id);
+      await runQuery('DELETE FROM users WHERE id = ?', [req.params.id]);
       res.json({ success: true, message: 'User deleted successfully' });
     } catch (error) {
       console.error('Error deleting user:', error);

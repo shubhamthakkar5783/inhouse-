@@ -1,9 +1,9 @@
-const TaskModel = require('../models/taskModel');
+const { allQuery, getQuery, runQuery } = require('../database');
 
 const taskController = {
   getAllTasks: async (req, res) => {
     try {
-      const tasks = await TaskModel.getAll();
+      const tasks = await allQuery('SELECT * FROM tasks ORDER BY created_at DESC');
       res.json({ success: true, data: tasks });
     } catch (error) {
       console.error('Error getting tasks:', error);
@@ -13,7 +13,7 @@ const taskController = {
 
   getTaskById: async (req, res) => {
     try {
-      const task = await TaskModel.findById(req.params.id);
+      const task = await getQuery('SELECT * FROM tasks WHERE id = ?', [req.params.id]);
       if (!task) {
         return res.status(404).json({ success: false, error: 'Task not found' });
       }
@@ -26,7 +26,7 @@ const taskController = {
 
   getTasksByEventId: async (req, res) => {
     try {
-      const tasks = await TaskModel.findByEventId(req.params.eventId);
+      const tasks = await allQuery('SELECT * FROM tasks WHERE event_id = ? ORDER BY created_at DESC', [req.params.eventId]);
       res.json({ success: true, data: tasks });
     } catch (error) {
       console.error('Error getting event tasks:', error);
@@ -34,21 +34,26 @@ const taskController = {
     }
   },
 
-  getTasksByStatus: async (req, res) => {
-    try {
-      const { eventId, status } = req.params;
-      const tasks = await TaskModel.findByStatus(eventId, status);
-      res.json({ success: true, data: tasks });
-    } catch (error) {
-      console.error('Error getting tasks by status:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  },
-
   createTask: async (req, res) => {
     try {
-      const taskId = await TaskModel.create(req.body);
-      const task = await TaskModel.findById(taskId);
+      const {
+        event_id,
+        title,
+        description,
+        status = 'todo',
+        priority = 'medium',
+        assigned_to,
+        due_date
+      } = req.body;
+
+      const result = await runQuery(
+        `INSERT INTO tasks (
+          event_id, title, description, status, priority, assigned_to, due_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [event_id, title, description, status, priority, assigned_to, due_date]
+      );
+
+      const task = await getQuery('SELECT * FROM tasks WHERE id = ?', [result.id]);
       res.status(201).json({ success: true, data: task });
     } catch (error) {
       console.error('Error creating task:', error);
@@ -58,8 +63,24 @@ const taskController = {
 
   updateTask: async (req, res) => {
     try {
-      await TaskModel.update(req.params.id, req.body);
-      const task = await TaskModel.findById(req.params.id);
+      const {
+        title,
+        description,
+        status,
+        priority,
+        assigned_to,
+        due_date
+      } = req.body;
+
+      await runQuery(
+        `UPDATE tasks SET
+          title = ?, description = ?, status = ?, priority = ?,
+          assigned_to = ?, due_date = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?`,
+        [title, description, status, priority, assigned_to, due_date, req.params.id]
+      );
+
+      const task = await getQuery('SELECT * FROM tasks WHERE id = ?', [req.params.id]);
       res.json({ success: true, data: task });
     } catch (error) {
       console.error('Error updating task:', error);
@@ -67,21 +88,9 @@ const taskController = {
     }
   },
 
-  updateTaskStatus: async (req, res) => {
-    try {
-      const { status } = req.body;
-      await TaskModel.updateStatus(req.params.id, status);
-      const task = await TaskModel.findById(req.params.id);
-      res.json({ success: true, data: task });
-    } catch (error) {
-      console.error('Error updating task status:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  },
-
   deleteTask: async (req, res) => {
     try {
-      await TaskModel.delete(req.params.id);
+      await runQuery('DELETE FROM tasks WHERE id = ?', [req.params.id]);
       res.json({ success: true, message: 'Task deleted successfully' });
     } catch (error) {
       console.error('Error deleting task:', error);
