@@ -1,4 +1,5 @@
 const { allQuery, getQuery, runQuery } = require('../database');
+const bcrypt = require('bcrypt');
 
 const userController = {
   getAllUsers: async (req, res) => {
@@ -60,6 +61,92 @@ const userController = {
       res.json({ success: true, message: 'User deleted successfully' });
     } catch (error) {
       console.error('Error deleting user:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
+  register: async (req, res) => {
+    try {
+      const { email, password, full_name } = req.body;
+
+      if (!email || !password || !full_name) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email, password, and full name are required'
+        });
+      }
+
+      const existingUser = await getQuery('SELECT id FROM users WHERE email = ?', [email]);
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          error: 'User with this email already exists'
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const username = email.split('@')[0];
+
+      const result = await runQuery(
+        'INSERT INTO users (username, email, password, full_name) VALUES (?, ?, ?, ?)',
+        [username, email, hashedPassword, full_name]
+      );
+
+      const user = await getQuery(
+        'SELECT id, username, email, full_name, created_at FROM users WHERE id = ?',
+        [result.id]
+      );
+
+      res.status(201).json({
+        success: true,
+        data: user,
+        message: 'User registered successfully'
+      });
+    } catch (error) {
+      console.error('Error registering user:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
+  login: async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email and password are required'
+        });
+      }
+
+      const user = await getQuery('SELECT * FROM users WHERE email = ?', [email]);
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid email or password'
+        });
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid email or password'
+        });
+      }
+
+      const { password: _, ...userWithoutPassword } = user;
+
+      res.json({
+        success: true,
+        data: userWithoutPassword,
+        message: 'Login successful'
+      });
+    } catch (error) {
+      console.error('Error logging in:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

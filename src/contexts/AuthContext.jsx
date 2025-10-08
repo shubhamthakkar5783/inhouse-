@@ -20,13 +20,17 @@ export const AuthProvider = ({ children }) => {
 
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (mounted) {
-          setUser(session?.user ?? null);
-          setLoading(false);
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          if (mounted) {
+            setUser(parsedUser);
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
+        localStorage.removeItem('user');
+      } finally {
         if (mounted) {
           setLoading(false);
         }
@@ -35,34 +39,45 @@ export const AuthProvider = ({ children }) => {
 
     initializeAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        if (mounted) {
-          setUser(session?.user ?? null);
-        }
-      })();
-    });
-
     return () => {
       mounted = false;
-      subscription?.unsubscribe();
     };
   }, []);
 
   const signUp = async (email, password, fullName) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName
-          }
-        }
+      const response = await fetch('http://localhost:5000/api/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          full_name: fullName
+        })
       });
 
-      if (error) throw error;
-      return { data, error: null };
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Registration failed');
+      }
+
+      const userData = {
+        user: {
+          id: result.data.id,
+          email: result.data.email,
+          user_metadata: {
+            full_name: result.data.full_name
+          }
+        }
+      };
+
+      setUser(userData.user);
+      localStorage.setItem('user', JSON.stringify(userData.user));
+
+      return { data: userData, error: null };
     } catch (error) {
       return { data: null, error };
     }
@@ -70,13 +85,37 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = async (email, password) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+      const response = await fetch('http://localhost:5000/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
       });
 
-      if (error) throw error;
-      return { data, error: null };
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Login failed');
+      }
+
+      const userData = {
+        user: {
+          id: result.data.id,
+          email: result.data.email,
+          user_metadata: {
+            full_name: result.data.full_name
+          }
+        }
+      };
+
+      setUser(userData.user);
+      localStorage.setItem('user', JSON.stringify(userData.user));
+
+      return { data: userData, error: null };
     } catch (error) {
       return { data: null, error };
     }
@@ -84,8 +123,8 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      setUser(null);
+      localStorage.removeItem('user');
       return { error: null };
     } catch (error) {
       return { error };
