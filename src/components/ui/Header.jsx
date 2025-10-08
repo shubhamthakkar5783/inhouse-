@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from 'contexts/AuthContext';
 import Icon from '../AppIcon';
 import Button from './Button';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   const navigationItems = [
     {
@@ -52,6 +55,13 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (!error) {
+      navigate('/login');
+    }
+  };
+
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-1000 bg-card border-b border-border shadow-card">
@@ -89,6 +99,17 @@ const Header = () => {
                 </div>
               </div>
             ))}
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                iconName="LogOut"
+                className="ml-2"
+              >
+                Logout
+              </Button>
+            )}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -147,6 +168,17 @@ const Header = () => {
                     </div>
                   </a>
                 ))}
+                {user && (
+                  <Button
+                    variant="destructive"
+                    fullWidth
+                    onClick={handleLogout}
+                    iconName="LogOut"
+                    className="mt-4"
+                  >
+                    Logout
+                  </Button>
+                )}
               </div>
             </nav>
           </div>

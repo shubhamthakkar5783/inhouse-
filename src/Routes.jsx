@@ -1,30 +1,72 @@
 import React from "react";
-import { BrowserRouter, Routes as RouterRoutes, Route } from "react-router-dom";
+import { BrowserRouter, Routes as RouterRoutes, Route, Navigate } from "react-router-dom";
 import ScrollToTop from "components/ScrollToTop";
 import ErrorBoundary from "components/ErrorBoundary";
+import ProtectedRoute from "components/ProtectedRoute";
 import NotFound from "pages/NotFound";
-import EventPlanDetails from './pages/event-plan-details';
-import BudgetCalculator from './pages/budget-calculator';
-import TaskBoardManagement from './pages/task-board-management';
-import MarketingMaterials from './pages/marketing-materials';
-import EventPlanningDashboard from './pages/event-planning-dashboard';
+import { AuthProvider } from "contexts/AuthContext";
+import Login from "pages/login";
+import Signup from "pages/signup";
+import EventPlanDetails from "pages/event-plan-details";
+import BudgetCalculator from "pages/budget-calculator";
+import TaskBoardManagement from "pages/task-board-management";
+import MarketingMaterials from "pages/marketing-materials";
+import EventPlanningDashboard from "pages/event-planning-dashboard";
 
 const Routes = () => {
   return (
     <BrowserRouter>
-      <ErrorBoundary>
-      <ScrollToTop />
-      <RouterRoutes>
-        {/* Define your route here */}
-        <Route path="/" element={<EventPlanningDashboard />} />
-        <Route path="/event-plan-details" element={<EventPlanDetails />} />
-        <Route path="/budget-calculator" element={<BudgetCalculator />} />
-        <Route path="/task-board-management" element={<TaskBoardManagement />} />
-        <Route path="/marketing-materials" element={<MarketingMaterials />} />
-        <Route path="/event-planning-dashboard" element={<EventPlanningDashboard />} />
-        <Route path="*" element={<NotFound />} />
-      </RouterRoutes>
-      </ErrorBoundary>
+      <AuthProvider>
+        <ErrorBoundary>
+          <ScrollToTop />
+          <RouterRoutes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route
+              path="/event-planning-dashboard"
+              element={
+                <ProtectedRoute>
+                  <EventPlanningDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/event-plan-details"
+              element={
+                <ProtectedRoute>
+                  <EventPlanDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/budget-calculator"
+              element={
+                <ProtectedRoute>
+                  <BudgetCalculator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/task-board-management"
+              element={
+                <ProtectedRoute>
+                  <TaskBoardManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/marketing-materials"
+              element={
+                <ProtectedRoute>
+                  <MarketingMaterials />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </RouterRoutes>
+        </ErrorBoundary>
+      </AuthProvider>
     </BrowserRouter>
   );
 };
