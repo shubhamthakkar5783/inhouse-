@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from 'contexts/AuthContext';
-import Button from 'components/ui/Button';
-import Input from 'components/ui/Input';
 import Icon from 'components/AppIcon';
+import Button from 'components/ui/Button';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -15,6 +14,12 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -82,117 +87,152 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center px-6 py-12 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]"></div>
-
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+    <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center px-4 py-12">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-secondary/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="backdrop-blur-xl bg-slate-900/40 rounded-2xl shadow-2xl border border-slate-700/50 p-8 relative overflow-hidden group hover:border-cyan-500/50 transition-all duration-500">
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      <div className={`w-full max-w-md relative z-10 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        {/* Logo and Header */}
+        <div className="text-center mb-10">
+          <Link to="/" className="inline-flex items-center justify-center space-x-3 mb-8 group">
+            <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-primary to-secondary rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+              <Icon name="Sparkles" size={26} color="white" />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">Smart Event</span>
+              <span className="text-xs text-muted-foreground font-medium tracking-wide">Planner</span>
+            </div>
+          </Link>
 
-          <div className="relative">
-            <div className="flex flex-col items-center mb-8">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                <div className="relative flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl shadow-lg">
-                  <Icon name="Sparkles" size={28} color="white" />
-                </div>
+          <div className="space-y-3">
+            <h1 className="text-4xl font-bold text-foreground tracking-tight">
+              Welcome Back
+            </h1>
+            <p className="text-muted-foreground text-base">
+              Sign in to continue planning amazing events
+            </p>
+          </div>
+        </div>
+
+        {/* Main Card */}
+        <div className="bg-card/80 backdrop-blur-xl border border-border rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8">
+          {errorMessage && (
+            <div className="mb-6 p-4 bg-error/10 border border-error/30 rounded-xl flex items-start space-x-3 animate-slide-in backdrop-blur-sm">
+              <div className="flex items-center justify-center w-5 h-5 bg-error/20 rounded-full flex-shrink-0 mt-0.5">
+                <Icon name="AlertCircle" size={14} className="text-error" />
               </div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent mb-2">
-                Welcome Back
-              </h1>
-              <p className="text-slate-400 text-sm">
-                Sign in to your Smart Event Planner account
-              </p>
+              <p className="text-sm text-error font-medium">{errorMessage}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2 group">
+              <label htmlFor="email" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <div className="flex items-center justify-center w-5 h-5 bg-primary/10 rounded-md group-hover:bg-primary/20 transition-colors">
+                  <Icon name="Mail" size={14} className="text-primary" />
+                </div>
+                Email Address
+              </label>
+              <div className="relative">
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  placeholder="your.email@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className="w-full px-4 py-3 bg-input border-2 border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:border-primary/30"
+                />
+              </div>
+              {errors.email && (
+                <p className="text-xs text-error mt-1.5 flex items-center gap-1 animate-slide-in">
+                  <Icon name="AlertCircle" size={12} />
+                  {errors.email}
+                </p>
+              )}
             </div>
 
-            {errorMessage && (
-              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start space-x-3 backdrop-blur-sm animate-in slide-in-from-top duration-300">
-                <Icon name="AlertCircle" size={18} className="text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-300">{errorMessage}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Email</label>
-                <div className="relative group/input">
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Enter your email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    disabled={loading}
-                    className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group-hover/input:border-slate-600/50"
-                  />
+            <div className="space-y-2 group">
+              <label htmlFor="password" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <div className="flex items-center justify-center w-5 h-5 bg-primary/10 rounded-md group-hover:bg-primary/20 transition-colors">
+                  <Icon name="Lock" size={14} className="text-primary" />
                 </div>
-                {errors.email && (
-                  <p className="text-xs text-red-400 mt-1 animate-in slide-in-from-top duration-200">{errors.email}</p>
-                )}
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className="w-full px-4 py-3 pr-12 bg-input border-2 border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:border-primary/30"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200 disabled:opacity-50"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  <Icon name={showPassword ? 'EyeOff' : 'Eye'} size={18} />
+                </button>
               </div>
+              {errors.password && (
+                <p className="text-xs text-error mt-1.5 flex items-center gap-1 animate-slide-in">
+                  <Icon name="AlertCircle" size={12} />
+                  {errors.password}
+                </p>
+              )}
+            </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Password</label>
-                <div className="relative group/input">
-                  <input
-                    type="password"
-                    name="password"
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    disabled={loading}
-                    className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group-hover/input:border-slate-600/50"
-                  />
-                </div>
-                {errors.password && (
-                  <p className="text-xs text-red-400 mt-1 animate-in slide-in-from-top duration-200">{errors.password}</p>
-                )}
-              </div>
-
-              <button
+            <div className="pt-2">
+              <Button
                 type="submit"
                 disabled={loading}
-                className="w-full relative px-6 py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group/button overflow-hidden"
+                loading={loading}
+                fullWidth
+                size="lg"
+                className="font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-lg py-3.5"
+                iconName="ArrowRight"
+                iconPosition="right"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-500 opacity-0 group-hover/button:opacity-100 transition-opacity duration-300"></div>
-                <span className="relative flex items-center justify-center">
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Signing in...
-                    </>
-                  ) : (
-                    'Sign In'
-                  )}
-                </span>
-              </button>
-            </form>
+                {loading ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </div>
+          </form>
 
-            <div className="mt-8 text-center">
-              <p className="text-sm text-slate-400">
+          {/* Divider */}
+          <div className="mt-8 pt-8 border-t border-border">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
                 Don't have an account?{' '}
                 <Link
                   to="/signup"
-                  className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                  className="text-primary hover:text-secondary font-semibold transition-colors inline-flex items-center gap-1 group"
                 >
                   Sign up
+                  <Icon name="ArrowRight" size={14} className="group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </p>
             </div>
           </div>
         </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-xs text-slate-500">
-            By signing in, you agree to our Terms of Service and Privacy Policy
+        {/* Footer */}
+        <div className="mt-8 text-center">
+          <p className="text-xs text-muted-foreground">
+            By signing in, you agree to our{' '}
+            <a href="#" className="text-primary hover:text-secondary transition-colors font-medium">Terms of Service</a>
+            {' '}and{' '}
+            <a href="#" className="text-primary hover:text-secondary transition-colors font-medium">Privacy Policy</a>
           </p>
         </div>
       </div>
