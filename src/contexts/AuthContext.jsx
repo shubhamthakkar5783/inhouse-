@@ -20,16 +20,12 @@ export const AuthProvider = ({ children }) => {
 
     const initializeAuth = async () => {
       try {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          if (mounted) {
-            setUser(parsedUser);
-          }
+        localStorage.removeItem('user');
+        if (mounted) {
+          setUser(null);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        localStorage.removeItem('user');
       } finally {
         if (mounted) {
           setLoading(false);

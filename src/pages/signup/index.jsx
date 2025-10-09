@@ -6,7 +6,7 @@ import Button from 'components/ui/Button';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signUp, user } = useAuth();
+  const { signUp, user, signOut } = useAuth();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -93,9 +93,10 @@ const Signup = () => {
       if (error) {
         setErrorMessage(error.message || 'Failed to create account. Please try again.');
       } else if (data?.user) {
+        await signOut();
         setSuccessMessage('Account created successfully! Redirecting to login...');
         setTimeout(() => {
-          navigate('/login');
+          navigate('/login', { replace: true });
         }, 1500);
       }
     } catch (error) {

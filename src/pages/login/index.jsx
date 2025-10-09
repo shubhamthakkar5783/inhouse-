@@ -23,7 +23,7 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/event-planning-dashboard');
+      navigate('/event-planning-dashboard', { replace: true });
     }
   }, [user, navigate]);
 
@@ -77,7 +77,7 @@ const Login = () => {
       if (error) {
         setErrorMessage(error.message || 'Failed to sign in. Please check your credentials.');
       } else if (data?.user) {
-        navigate('/event-planning-dashboard');
+        navigate('/event-planning-dashboard', { replace: true });
       }
     } catch (error) {
       setErrorMessage('An unexpected error occurred. Please try again.');
