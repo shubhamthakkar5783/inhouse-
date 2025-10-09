@@ -6,7 +6,7 @@ import Button from 'components/ui/Button';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn, user, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -22,10 +22,10 @@ const Login = () => {
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       navigate('/event-planning-dashboard', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const validateForm = () => {
     const newErrors = {};

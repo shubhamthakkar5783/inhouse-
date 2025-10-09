@@ -9,6 +9,7 @@ import GeneratedContentCard from './components/GeneratedContentCard';
 import ProgressOverview from './components/ProgressOverview';
 import QuickAccessPanel from './components/QuickAccessPanel';
 import EmptyState from './components/EmptyState';
+import EventPreferencesPanel from './components/EventPreferencesPanel';
 import { eventService } from '../../services/eventService';
 
 const EventPlanningDashboard = () => {
@@ -186,6 +187,14 @@ const EventPlanningDashboard = () => {
     }
   };
 
+  const handlePreferencesSave = (savedData) => {
+    showSuccess('Event preferences saved successfully!');
+  };
+
+  const handlePreferencesLoad = (loadedData) => {
+    console.log('Preferences loaded:', loadedData);
+  };
+
   const scrollToForm = () => {
     document.querySelector('textarea')?.focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -240,8 +249,14 @@ const EventPlanningDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Main Content Area */}
             <div className="lg:col-span-3 space-y-8">
+              {/* Event Preferences Panel */}
+              <EventPreferencesPanel
+                onSave={handlePreferencesSave}
+                onLoad={handlePreferencesLoad}
+              />
+
               {/* Event Prompt Form */}
-              <EventPromptForm 
+              <EventPromptForm
                 onGenerate={handleGenerateEvent}
                 isGenerating={isGenerating}
               />

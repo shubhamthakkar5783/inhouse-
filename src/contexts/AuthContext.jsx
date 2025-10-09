@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from 'lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext({});
 
@@ -20,9 +20,16 @@ export const AuthProvider = ({ children }) => {
 
     const initializeAuth = async () => {
       try {
-        localStorage.removeItem('user');
-        if (mounted) {
-          setUser(null);
+        const storedUser = localStorage.getItem('user');
+        if (storedUser && mounted) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+          } catch (parseError) {
+            console.error('Error parsing stored user:', parseError);
+            localStorage.removeItem('user');
+            setUser(null);
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
