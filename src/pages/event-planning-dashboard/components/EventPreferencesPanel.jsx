@@ -21,12 +21,12 @@ const EventPreferencesPanel = ({ onSave, onLoad }) => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const venueOptions = [
-    { value: 'garden-a', label: 'Garden A - Outdoor with Gazebo' },
-    { value: 'garden-b', label: 'Garden B - Lakeside View' },
-    { value: 'garden-c', label: 'Garden C - Premium Terrace' },
-    { value: 'banquet-hall', label: 'Banquet Hall - Indoor' },
-    { value: 'rooftop', label: 'Rooftop - Skyline View' },
-    { value: 'conference-room', label: 'Conference Room - Corporate' },
+    { value: 'taj-palace-lawns', label: 'Taj Palace Lawns - Luxury Garden with Gazebo' },
+    { value: 'leela-ambience', label: 'The Leela Ambience - Grand Ballroom' },
+    { value: 'itc-maurya', label: 'ITC Maurya - Conference & Banquet Hall' },
+    { value: 'oberoi-sky-terrace', label: 'The Oberoi Sky Terrace - Premium Rooftop' },
+    { value: 'trident-poolside', label: 'Trident Poolside Lawns - Lakeside View' },
+    { value: 'lalit-ashok', label: 'The Lalit Ashok - Convention Center' },
   ];
 
   useEffect(() => {
