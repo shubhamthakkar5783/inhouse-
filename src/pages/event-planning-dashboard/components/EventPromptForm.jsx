@@ -86,14 +86,14 @@ const EventPromptForm = ({ onGenerate, isGenerating }) => {
   ];
 
   return (
-    <div className="bg-card rounded-lg border border-border p-6 shadow-card">
+    <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
       <div className="flex items-center space-x-3 mb-6">
-        <div className="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-lg">
-          <Icon name="Sparkles" size={20} className="text-primary" />
+        <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
+          <Icon name="Sparkles" size={20} className="text-blue-600" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-foreground">AI Event Planner</h2>
-          <p className="text-sm text-muted-foreground">Describe your vision and let AI create your perfect event plan</p>
+          <h3 className="text-lg font-semibold text-gray-900">AI Event Planner</h3>
+          <p className="text-sm text-gray-600">Describe your vision and let AI create your perfect event plan</p>
         </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-6">

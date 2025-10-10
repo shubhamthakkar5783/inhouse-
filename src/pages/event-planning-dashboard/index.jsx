@@ -249,17 +249,26 @@ const EventPlanningDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Main Content Area */}
             <div className="lg:col-span-3 space-y-8">
-              {/* Event Preferences Panel */}
-              <EventPreferencesPanel
-                onSave={handlePreferencesSave}
-                onLoad={handlePreferencesLoad}
-              />
+              {/* Combined Event Configuration Panel */}
+              <div className="bg-gradient-to-br from-white to-gray-50/50 rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+                  <h2 className="text-xl font-bold text-white">Event Configuration Center</h2>
+                  <p className="text-blue-100 text-sm mt-1">Configure your event preferences and generate your plan with AI</p>
+                </div>
+                <div className="p-6 space-y-6">
+                  {/* Event Preferences Panel */}
+                  <EventPreferencesPanel
+                    onSave={handlePreferencesSave}
+                    onLoad={handlePreferencesLoad}
+                  />
 
-              {/* Event Prompt Form */}
-              <EventPromptForm
-                onGenerate={handleGenerateEvent}
-                isGenerating={isGenerating}
-              />
+                  {/* Event Prompt Form */}
+                  <EventPromptForm
+                    onGenerate={handleGenerateEvent}
+                    isGenerating={isGenerating}
+                  />
+                </div>
+              </div>
 
               {/* Generated Content or Empty State */}
               {hasGeneratedContent ? (

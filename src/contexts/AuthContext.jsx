@@ -20,11 +20,24 @@ export const AuthProvider = ({ children }) => {
 
     const initializeAuth = async () => {
       try {
-        const storedUser = localStorage.getItem('user');
+        const storedUser = sessionStorage.getItem('user');
+        const localUser = localStorage.getItem('user');
+
         if (storedUser && mounted) {
           try {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
+          } catch (parseError) {
+            console.error('Error parsing stored user:', parseError);
+            sessionStorage.removeItem('user');
+            localStorage.removeItem('user');
+            setUser(null);
+          }
+        } else if (localUser && mounted) {
+          try {
+            const parsedUser = JSON.parse(localUser);
+            setUser(parsedUser);
+            sessionStorage.setItem('user', localUser);
           } catch (parseError) {
             console.error('Error parsing stored user:', parseError);
             localStorage.removeItem('user');
@@ -78,7 +91,9 @@ export const AuthProvider = ({ children }) => {
       };
 
       setUser(userData.user);
-      localStorage.setItem('user', JSON.stringify(userData.user));
+      const userJSON = JSON.stringify(userData.user);
+      localStorage.setItem('user', userJSON);
+      sessionStorage.setItem('user', userJSON);
 
       return { data: userData, error: null };
     } catch (error) {
@@ -116,7 +131,9 @@ export const AuthProvider = ({ children }) => {
       };
 
       setUser(userData.user);
-      localStorage.setItem('user', JSON.stringify(userData.user));
+      const userJSON = JSON.stringify(userData.user);
+      localStorage.setItem('user', userJSON);
+      sessionStorage.setItem('user', userJSON);
 
       return { data: userData, error: null };
     } catch (error) {
@@ -128,6 +145,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setUser(null);
       localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
       return { error: null };
     } catch (error) {
       return { error };

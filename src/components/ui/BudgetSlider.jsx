@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { DollarSign, ChevronDown } from 'lucide-react';
+import { IndianRupee, ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const BudgetSlider = ({ label, value, onChange, className }) => {
@@ -45,7 +45,7 @@ const BudgetSlider = ({ label, value, onChange, className }) => {
   const displayValue = value ? formatCurrency(value) : '';
 
   const getSliderBackground = () => {
-    const percentage = ((tempValue - 0) / (500000 - 0)) * 100;
+    const percentage = ((tempValue - 0) / (20000000 - 0)) * 100;
     return `linear-gradient(to right, #2563eb 0%, #2563eb ${percentage}%, #e5e7eb ${percentage}%, #e5e7eb 100%)`;
   };
 
@@ -66,7 +66,7 @@ const BudgetSlider = ({ label, value, onChange, className }) => {
         )}
       >
         <div className="flex items-center gap-3 flex-1">
-          <DollarSign className="w-5 h-5 text-gray-500" />
+          <IndianRupee className="w-5 h-5 text-gray-500" />
           <span className={cn(
             "text-left",
             displayValue ? "text-foreground" : "text-gray-400"
@@ -99,8 +99,8 @@ const BudgetSlider = ({ label, value, onChange, className }) => {
               <input
                 type="range"
                 min="0"
-                max="500000"
-                step="5000"
+                max="20000000"
+                step="50000"
                 value={tempValue}
                 onChange={handleSliderChange}
                 className="w-full h-2 rounded-full appearance-none cursor-pointer slider-thumb"
@@ -111,7 +111,7 @@ const BudgetSlider = ({ label, value, onChange, className }) => {
 
               <div className="flex justify-between mt-2 text-xs text-gray-500">
                 <span>₹0</span>
-                <span>₹5L</span>
+                <span>₹2 Cr</span>
               </div>
             </div>
 

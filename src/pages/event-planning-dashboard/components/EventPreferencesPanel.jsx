@@ -77,15 +77,15 @@ const EventPreferencesPanel = ({ onSave, onLoad }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-            <MapPin className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Event Preferences</h2>
-            <p className="text-sm text-muted-foreground">Configure your event details</p>
+            <h3 className="text-lg font-semibold text-gray-900">Event Preferences</h3>
+            <p className="text-sm text-gray-600">Configure your event details</p>
           </div>
         </div>
 
