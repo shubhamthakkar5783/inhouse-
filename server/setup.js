@@ -151,6 +151,29 @@ const setupDatabase = () => {
         }
       });
 
+      db.run(`CREATE TABLE IF NOT EXISTS event_preferences (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER DEFAULT 1,
+        event_id INTEGER,
+        venue TEXT,
+        number_of_people INTEGER,
+        budget REAL,
+        event_date DATE,
+        event_time TIME,
+        event_type TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL
+      )`, (err) => {
+        if (err) {
+          console.error('✗ Error creating event_preferences table:', err.message);
+          reject(err);
+        } else {
+          console.log('✓ Event Preferences table created');
+        }
+      });
+
       db.get('SELECT COUNT(*) as count FROM users', [], (err, row) => {
         if (err) {
           console.error('✗ Error checking for sample data:', err.message);

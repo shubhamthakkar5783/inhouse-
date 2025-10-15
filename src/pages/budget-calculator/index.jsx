@@ -8,6 +8,7 @@ import BudgetBreakdown from './components/BudgetBreakdown';
 import BudgetComparison from './components/BudgetComparison';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import { preferencesService } from '../../services/preferencesService';
 
 const BudgetCalculator = () => {
   const [formData, setFormData] = useState({
@@ -37,6 +38,39 @@ const BudgetCalculator = () => {
     showInfo,
     showLoading
   } = useNotifications();
+
+  useEffect(() => {
+    loadPreferences();
+  }, []);
+
+  const loadPreferences = async () => {
+    try {
+      const preferences = await preferencesService.getLatestPreferences();
+      if (preferences) {
+        setFormData(prev => ({
+          ...prev,
+          audienceSize: preferences.number_of_people || prev.audienceSize,
+          eventType: preferences.event_type || prev.eventType,
+          venueType: preferences.venue ? mapVenueToType(preferences.venue) : prev.venueType,
+        }));
+        showInfo('Event preferences loaded from dashboard');
+      }
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+    }
+  };
+
+  const mapVenueToType = (venue) => {
+    const venueMapping = {
+      'taj-palace-lawns': 'luxury-outdoor',
+      'leela-ambience': 'grand-ballroom',
+      'itc-maurya': 'conference-hall',
+      'oberoi-sky-terrace': 'rooftop',
+      'trident-poolside': 'outdoor',
+      'lalit-ashok': 'convention-center'
+    };
+    return venueMapping[venue] || '';
+  };
 
   // Auto-calculate when form data changes
   useEffect(() => {

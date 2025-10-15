@@ -5,7 +5,7 @@ import NumberInput from '../../../components/ui/NumberInput';
 import BudgetSlider from '../../../components/ui/BudgetSlider';
 import DatePicker from '../../../components/ui/DatePicker';
 import TimePicker from '../../../components/ui/TimePicker';
-import { eventPreferencesService } from '../../../services/eventPreferencesService';
+import { preferencesService } from '../../../services/preferencesService';
 import { cn } from '../../../utils/cn';
 
 const EventPreferencesPanel = ({ onSave, onLoad }) => {
@@ -35,14 +35,14 @@ const EventPreferencesPanel = ({ onSave, onLoad }) => {
 
   const loadPreferences = async () => {
     try {
-      const savedPreferences = await eventPreferencesService.getLatestPreferences();
+      const savedPreferences = await preferencesService.getLatestPreferences();
       if (savedPreferences) {
         setPreferences({
           venue: savedPreferences.venue || '',
-          numberOfPeople: savedPreferences.numberOfPeople || 50,
+          numberOfPeople: savedPreferences.number_of_people || 50,
           budget: savedPreferences.budget || 50000,
-          eventDate: savedPreferences.eventDate || '',
-          eventTime: savedPreferences.eventTime || '',
+          eventDate: savedPreferences.event_date || '',
+          eventTime: savedPreferences.event_time || '',
         });
         if (onLoad) onLoad(savedPreferences);
       }
@@ -62,7 +62,7 @@ const EventPreferencesPanel = ({ onSave, onLoad }) => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const savedData = await eventPreferencesService.savePreferences(preferences);
+      const savedData = await preferencesService.savePreferences(preferences);
       setHasUnsavedChanges(false);
       if (onSave) onSave(savedData);
     } catch (error) {

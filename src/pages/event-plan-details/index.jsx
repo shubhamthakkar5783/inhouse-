@@ -8,44 +8,56 @@ import PlanActions from './components/PlanActions';
 import ProgressTracker from './components/ProgressTracker';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import { preferencesService } from '../../services/preferencesService';
 
 const EventPlanDetails = () => {
   const [eventData, setEventData] = useState(null);
   const [timelineData, setTimelineData] = useState([]);
   const [progressData, setProgressData] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('timeline'); // timeline, gantt, calendar
-  
+  const [viewMode, setViewMode] = useState('timeline');
+
   const { notifications, showSuccess, showError, showInfo, dismissNotification } = useNotifications();
 
-  // Mock event data
+  const getVenueName = (venueCode) => {
+    const venueMapping = {
+      'taj-palace-lawns': 'Taj Palace Lawns - Luxury Garden',
+      'leela-ambience': 'The Leela Ambience - Grand Ballroom',
+      'itc-maurya': 'ITC Maurya - Conference & Banquet Hall',
+      'oberoi-sky-terrace': 'The Oberoi Sky Terrace - Premium Rooftop',
+      'trident-poolside': 'Trident Poolside Lawns - Lakeside View',
+      'lalit-ashok': 'The Lalit Ashok - Convention Center'
+    };
+    return venueMapping[venueCode] || venueCode;
+  };
+
   useEffect(() => {
-    const loadEventData = () => {
+    const loadEventData = async () => {
       setIsLoading(true);
-      
+
       try {
-        // Check for saved event data first
+        const preferences = await preferencesService.getLatestPreferences();
+
         const savedEventData = localStorage.getItem('eventPlanningData');
         let eventDataToUse = null;
-        
+
         if (savedEventData) {
           try {
             eventDataToUse = JSON.parse(savedEventData);
           } catch (parseError) {
             console.error('Error parsing saved event data:', parseError);
-            localStorage.removeItem('eventPlanningData'); // Clear corrupted data
+            localStorage.removeItem('eventPlanningData');
           }
         }
-        
-        // Use saved data or fallback to mock data
+
         const mockEventData = {
           id: eventDataToUse?.id || 'evt_001',
-          name: eventDataToUse?.eventType || 'Annual Tech Conference 2025',
-          date: '2025-03-15',
-          time: '09:00',
-          location: 'Grand Convention Center, San Francisco',
-          attendees: 500,
-          budget: 75000,
+          name: eventDataToUse?.eventType || preferences?.event_type || 'Annual Tech Conference 2025',
+          date: preferences?.event_date || '2025-03-15',
+          time: preferences?.event_time || '09:00',
+          location: preferences?.venue ? getVenueName(preferences.venue) : 'Grand Convention Center, San Francisco',
+          attendees: preferences?.number_of_people || 500,
+          budget: preferences?.budget || 75000,
           status: 'planning',
           description: eventDataToUse?.prompt || 'A comprehensive technology conference featuring industry leaders and innovative solutions.',
           contacts: [
@@ -222,8 +234,12 @@ const EventPlanDetails = () => {
         setEventData(mockEventData);
         setTimelineData(mockTimelineData);
         setProgressData(mockProgressData);
-        
-        showInfo('Event plan loaded successfully');
+
+        if (preferences) {
+          showInfo('Event plan loaded with preferences from dashboard');
+        } else {
+          showInfo('Event plan loaded successfully');
+        }
       } catch (error) {
         console.error('Error loading event data:', error);
         showError('Failed to load event plan. Using default data.');
