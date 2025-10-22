@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
+import { geminiService } from '../../../services/geminiService';
+import { supabase } from '../../../lib/supabaseClient';
 
 const SocialMediaTab = () => {
-  const [selectedPlatform, setSelectedPlatform] = useState('facebook');
+  const [selectedPlatform, setSelectedPlatform] = useState('instagram');
+  const [eventDescription, setEventDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedCaptions, setGeneratedCaptions] = useState({});
 
@@ -69,17 +72,40 @@ const SocialMediaTab = () => {
   };
 
   const handleGenerate = async () => {
+    if (!eventDescription.trim()) {
+      alert('Please enter an event description');
+      return;
+    }
+
     setIsGenerating(true);
-    
-    // Simulate AI generation delay
-    setTimeout(() => {
-      const content = mockCaptions?.[selectedPlatform];
+
+    try {
+      const captionData = await geminiService.generateSocialMediaCaption(
+        eventDescription,
+        'Event',
+        selectedPlatform
+      );
+
+      await supabase
+        .from('ai_generated_content')
+        .insert({
+          content_type: 'social_media_caption',
+          platform: selectedPlatform,
+          prompt: eventDescription,
+          generated_content: captionData,
+          metadata: { platform: selectedPlatform }
+        });
+
       setGeneratedCaptions({
         ...generatedCaptions,
-        [selectedPlatform]: content
+        [selectedPlatform]: captionData
       });
+    } catch (error) {
+      console.error('Error generating caption:', error);
+      alert('Failed to generate social media caption. Please try again.');
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   const handleCopyCaption = (platform) => {
@@ -101,8 +127,25 @@ const SocialMediaTab = () => {
           <Icon name="Share2" size={20} className="mr-2 text-primary" />
           Social Media Caption Generator
         </h3>
-        
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
+
+        <div className="space-y-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Event Description
+            </label>
+            <textarea
+              value={eventDescription}
+              onChange={(e) => setEventDescription(e.target.value)}
+              placeholder="Describe your event in detail... Include event name, key highlights, date, venue, and any special features. You can write in English or Hindi."
+              rows={5}
+              className="w-full px-4 py-3 border rounded-md bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y min-h-[120px] border-border"
+              style={{ lineHeight: '1.6' }}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {eventDescription.length}/2000 characters
+            </p>
+          </div>
+
           <div className="flex-1">
             <Select
               label="Select Platform"
@@ -111,16 +154,17 @@ const SocialMediaTab = () => {
               onChange={setSelectedPlatform}
             />
           </div>
-          
-          <Button
-            onClick={handleGenerate}
-            loading={isGenerating}
-            iconName="Sparkles"
-            iconPosition="left"
-          >
-            {isGenerating ? 'Generating...' : 'Generate Caption'}
-          </Button>
         </div>
+
+        <Button
+          onClick={handleGenerate}
+          loading={isGenerating}
+          iconName="Sparkles"
+          iconPosition="left"
+          disabled={!eventDescription.trim()}
+        >
+          {isGenerating ? 'Generating...' : 'Generate Caption'}
+        </Button>
       </div>
       {/* Generated Caption */}
       {currentCaption && (

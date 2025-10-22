@@ -11,6 +11,8 @@ import QuickAccessPanel from './components/QuickAccessPanel';
 import EmptyState from './components/EmptyState';
 import EventPreferencesPanel from './components/EventPreferencesPanel';
 import { eventService } from '../../services/eventService';
+import { geminiService } from '../../services/geminiService';
+import { supabase } from '../../lib/supabaseClient';
 
 const EventPlanningDashboard = () => {
   const navigate = useNavigate();
@@ -118,12 +120,21 @@ const EventPlanningDashboard = () => {
     const loadingId = showLoading('Generating your event plan with AI...');
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const eventPlan = await geminiService.generateEventPlan(
+        formData.prompt || formData.description,
+        formData.eventType,
+        {
+          audienceSize: formData.audienceSize,
+          budget: formData.budget,
+          duration: formData.duration,
+          venueType: formData.venueType
+        }
+      );
 
       const savedEvent = await eventService.createEvent({
         eventName: formData.eventName || formData.eventType || 'New Event',
         eventType: formData.eventType,
-        description: formData.description,
+        description: formData.prompt || formData.description,
         date: formData.date,
         time: formData.time,
         location: formData.location,
@@ -133,12 +144,79 @@ const EventPlanningDashboard = () => {
         duration: formData.duration
       });
 
+      const { data: aiContent } = await supabase
+        .from('ai_generated_content')
+        .insert({
+          event_id: savedEvent.id,
+          content_type: 'event_plan',
+          prompt: formData.prompt || formData.description,
+          generated_content: eventPlan,
+          metadata: { eventType: formData.eventType }
+        })
+        .select()
+        .maybeSingle();
+
+      const generatedContentFromAI = [
+        {
+          id: 'event-plan',
+          title: 'Event Timeline',
+          description: 'AI-generated schedule and agenda',
+          icon: 'Calendar',
+          status: 'completed',
+          progress: 100,
+          lastUpdated: new Date().toISOString(),
+          items: eventPlan.timeline?.slice(0, 5)?.map(t => `${t.time} - ${t.activity}`) || []
+        },
+        {
+          id: 'task-list',
+          title: 'Task Management',
+          description: 'AI-generated action items',
+          icon: 'CheckSquare',
+          status: 'in-progress',
+          progress: 75,
+          lastUpdated: new Date().toISOString(),
+          items: eventPlan.tasks?.slice(0, 5)?.map(t => t.task) || []
+        },
+        {
+          id: 'budget',
+          title: 'Budget Estimate',
+          description: 'AI-generated cost breakdown',
+          icon: 'DollarSign',
+          status: 'completed',
+          progress: 100,
+          lastUpdated: new Date().toISOString(),
+          items: eventPlan.budget ? [
+            `Venue: ₹${eventPlan.budget.venue?.toLocaleString()}`,
+            `Catering: ₹${eventPlan.budget.catering?.toLocaleString()}`,
+            `Marketing: ₹${eventPlan.budget.marketing?.toLocaleString()}`,
+            `Equipment: ₹${eventPlan.budget.equipment?.toLocaleString()}`,
+            `Total: ₹${Object.values(eventPlan.budget).reduce((a, b) => a + b, 0).toLocaleString()}`
+          ] : []
+        },
+        {
+          id: 'marketing',
+          title: 'Marketing Materials',
+          description: 'AI-powered promotional content',
+          icon: 'Megaphone',
+          status: 'in-progress',
+          progress: 60,
+          lastUpdated: new Date().toISOString(),
+          items: [
+            'Event poster design',
+            'Email invitation template',
+            'Social media captions',
+            'LinkedIn event page',
+            'Registration landing page'
+          ]
+        }
+      ];
+
       setEventData(savedEvent);
-      setGeneratedContent(mockGeneratedContent);
+      setGeneratedContent(generatedContentFromAI);
       setHasGeneratedContent(true);
 
       dismissNotification(loadingId);
-      showSuccess('Event plan generated and saved successfully!');
+      showSuccess('Event plan generated with AI and saved successfully!');
 
     } catch (error) {
       console.error('Error creating event:', error);

@@ -4,6 +4,8 @@ import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
 import Image from '../../../components/AppImage';
+import { geminiService } from '../../../services/geminiService';
+import { supabase } from '../../../lib/supabaseClient';
 
 const VisualAssetsTab = () => {
   const [selectedAssetType, setSelectedAssetType] = useState('poster');
@@ -70,15 +72,34 @@ const VisualAssetsTab = () => {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    
-    // Simulate AI generation delay
-    setTimeout(() => {
-      const newAssets = mockAssets?.filter(asset => 
+
+    try {
+      const posterContent = await geminiService.generatePosterContent(
+        customText,
+        selectedAssetType,
+        selectedStyle
+      );
+
+      await supabase
+        .from('ai_generated_content')
+        .insert({
+          content_type: 'poster',
+          platform: selectedAssetType,
+          prompt: customText,
+          generated_content: posterContent,
+          metadata: { style: selectedStyle, color: selectedColor }
+        });
+
+      const newAssets = mockAssets?.filter(asset =>
         selectedAssetType === 'all' || asset?.type === selectedAssetType
       );
       setGeneratedAssets(newAssets);
+    } catch (error) {
+      console.error('Error generating poster:', error);
+      alert('Failed to generate poster content. Please try again.');
+    } finally {
       setIsGenerating(false);
-    }, 3000);
+    }
   };
 
   const handleDownload = (asset) => {

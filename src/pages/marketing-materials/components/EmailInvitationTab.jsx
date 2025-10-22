@@ -5,16 +5,21 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import { EmailService } from '../../../services/emailService';
 import { validateEmail } from '../../../utils/validation';
+import { geminiService } from '../../../services/geminiService';
+import { supabase } from '../../../lib/supabaseClient';
 
 const EmailInvitationTab = () => {
   const [selectedTone, setSelectedTone] = useState('formal');
   const [selectedTemplate, setSelectedTemplate] = useState('corporate');
+  const [eventDescription, setEventDescription] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [generatedContent, setGeneratedContent] = useState(null);
   const [emailErrors, setEmailErrors] = useState({});
   const [sendResult, setSendResult] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [editableContent, setEditableContent] = useState(null);
 
   const toneOptions = [
     { value: 'formal', label: 'Formal' },
@@ -32,19 +37,43 @@ const EmailInvitationTab = () => {
   ];
 
   const handleGenerate = async () => {
+    if (!eventDescription.trim()) {
+      alert('Please enter an event description');
+      return;
+    }
+
     setIsGenerating(true);
     setSendResult(null);
-    
+    setShowPreview(false);
+
     try {
-      // Create mock event data based on template selection
-      const eventData = {
-        eventType: selectedTemplate,
-        prompt: `Generate email invitation for ${selectedTemplate} event with professional details and engaging content.`,
-        timestamp: new Date()?.toISOString()
+      const emailData = await geminiService.generateEmailInvitation(
+        eventDescription,
+        selectedTemplate,
+        selectedTone
+      );
+
+      await supabase
+        .from('ai_generated_content')
+        .insert({
+          content_type: 'email',
+          platform: 'email',
+          prompt: eventDescription,
+          generated_content: emailData,
+          metadata: { tone: selectedTone, template: selectedTemplate }
+        });
+
+      const fullContent = `${emailData.greeting}\n\n${emailData.body}\n\n${emailData.eventDetails}\n\n${emailData.closing}\n${emailData.signature}`;
+
+      const content = {
+        subject: emailData.subject,
+        content: fullContent,
+        textContent: fullContent
       };
 
-      const content = EmailService.generateEmailContent(eventData, selectedTone);
       setGeneratedContent(content);
+      setEditableContent(content);
+      setShowPreview(true);
     } catch (error) {
       console.error('Email generation failed:', error);
       alert('Failed to generate email content. Please try again.');
@@ -54,7 +83,6 @@ const EmailInvitationTab = () => {
   };
 
   const handleSendEmail = async () => {
-    // Validate email first
     const emailValidation = validateEmail(recipientEmail);
     if (!emailValidation.isValid) {
       setEmailErrors({ email: emailValidation.error });
@@ -68,7 +96,7 @@ const EmailInvitationTab = () => {
     try {
       const eventData = {
         eventType: selectedTemplate,
-        prompt: generatedContent?.textContent || 'Event invitation',
+        prompt: editableContent?.textContent || eventDescription,
         timestamp: new Date()?.toISOString()
       };
 
@@ -79,9 +107,9 @@ const EmailInvitationTab = () => {
       );
 
       setSendResult(result);
-      
+
       if (result.success) {
-        setRecipientEmail(''); // Clear email field on success
+        setRecipientEmail('');
       }
     } catch (error) {
       console.error('Email sending failed:', error);
@@ -103,10 +131,17 @@ const EmailInvitationTab = () => {
   };
 
   const handleCopyContent = () => {
-    if (generatedContent) {
-      navigator.clipboard?.writeText(`Subject: ${generatedContent?.subject}\n\n${generatedContent?.content}`);
+    if (editableContent) {
+      navigator.clipboard?.writeText(`Subject: ${editableContent?.subject}\n\n${editableContent?.content}`);
       alert('Email content copied to clipboard!');
     }
+  };
+
+  const handleEditContent = (field, value) => {
+    setEditableContent(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   return (
@@ -118,20 +153,39 @@ const EmailInvitationTab = () => {
           Email Invitation Generator
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <Select
-            label="Email Tone"
-            options={toneOptions}
-            value={selectedTone}
-            onChange={setSelectedTone}
-          />
-          
-          <Select
-            label="Event Template"
-            options={templateOptions}
-            value={selectedTemplate}
-            onChange={setSelectedTemplate}
-          />
+        <div className="space-y-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Event Description
+            </label>
+            <textarea
+              value={eventDescription}
+              onChange={(e) => setEventDescription(e.target.value)}
+              placeholder="Describe your event in detail... Include event name, date, venue, key highlights, and any special instructions. You can write in English or Hindi."
+              rows={6}
+              className="w-full px-4 py-3 border rounded-md bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y min-h-[150px] border-border"
+              style={{ lineHeight: '1.6' }}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {eventDescription.length}/2000 characters
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Email Tone"
+              options={toneOptions}
+              value={selectedTone}
+              onChange={setSelectedTone}
+            />
+
+            <Select
+              label="Event Template"
+              options={templateOptions}
+              value={selectedTemplate}
+              onChange={setSelectedTemplate}
+            />
+          </div>
         </div>
 
         <Button
@@ -140,7 +194,7 @@ const EmailInvitationTab = () => {
           iconName="Sparkles"
           iconPosition="left"
           className="w-full md:w-auto"
-          disabled={!selectedTone || !selectedTemplate}
+          disabled={!selectedTone || !selectedTemplate || !eventDescription.trim()}
         >
           {isGenerating ? 'Generating Email...' : 'Generate Invitation'}
         </Button>
@@ -174,11 +228,14 @@ const EmailInvitationTab = () => {
           )}
         </div>
       )}
-      {/* Generated Content */}
-      {generatedContent && (
+      {/* Email Preview and Edit */}
+      {showPreview && editableContent && (
         <div className="bg-card rounded-lg border border-border p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground">Generated Email</h3>
+            <h3 className="text-lg font-semibold text-foreground flex items-center">
+              <Icon name="Eye" size={20} className="mr-2 text-primary" />
+              Email Preview & Edit
+            </h3>
             <div className="flex space-x-2">
               <Button
                 variant="outline"
@@ -201,14 +258,26 @@ const EmailInvitationTab = () => {
             </div>
           </div>
 
-          {/* Email Preview */}
-          <div className="bg-muted rounded-lg p-4 mb-4">
-            <div className="border-b border-border pb-3 mb-3">
-              <div className="text-sm text-muted-foreground mb-1">Subject:</div>
-              <div className="font-medium text-foreground">{generatedContent?.subject}</div>
+          {/* Editable Email Preview */}
+          <div className="bg-muted rounded-lg p-4 mb-4 space-y-4">
+            <div className="border-b border-border pb-3">
+              <div className="text-sm text-muted-foreground mb-2">Subject:</div>
+              <input
+                type="text"
+                value={editableContent?.subject}
+                onChange={(e) => handleEditContent('subject', e.target.value)}
+                className="w-full px-3 py-2 bg-background border border-border rounded-md font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
             </div>
-            <div className="whitespace-pre-line text-sm text-foreground leading-relaxed">
-              {generatedContent?.content}
+            <div>
+              <div className="text-sm text-muted-foreground mb-2">Email Content:</div>
+              <textarea
+                value={editableContent?.content}
+                onChange={(e) => handleEditContent('content', e.target.value)}
+                rows={12}
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm text-foreground leading-relaxed focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+                style={{ lineHeight: '1.6' }}
+              />
             </div>
           </div>
 
@@ -228,7 +297,7 @@ const EmailInvitationTab = () => {
             <div className="flex items-end">
               <Button
                 onClick={handleSendEmail}
-                disabled={!recipientEmail || isSending || !generatedContent}
+                disabled={!recipientEmail || isSending || !editableContent}
                 loading={isSending}
                 iconName="Send"
                 iconPosition="left"
@@ -240,7 +309,7 @@ const EmailInvitationTab = () => {
         </div>
       )}
       {/* Empty State */}
-      {!generatedContent && !isGenerating && (
+      {!showPreview && !isGenerating && (
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="Mail" size={24} className="text-muted-foreground" />
