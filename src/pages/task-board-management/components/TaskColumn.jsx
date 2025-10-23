@@ -142,9 +142,15 @@ const TaskColumn = ({
               key={task?.id}
               draggable
               onDragStart={(e) => {
-                e?.dataTransfer?.setData('text/plain', task?.id);
+                if (e.dataTransfer) {
+                  e.dataTransfer.setData('text/plain', task?.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                }
               }}
-              className="group"
+              onDragEnd={(e) => {
+                e.preventDefault();
+              }}
+              className="group cursor-move"
             >
               <TaskCard
                 task={task}

@@ -192,14 +192,14 @@ const TaskModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-1200 flex items-center justify-center">
+    <div className="fixed inset-0 z-1200 flex items-center justify-center overflow-y-auto">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black bg-opacity-50"
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50"
         onClick={onClose}
       />
       {/* Modal */}
-      <div className="relative bg-card rounded-lg shadow-modal w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4">
+      <div className="relative bg-card rounded-lg shadow-modal w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4 my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center space-x-3">

@@ -170,8 +170,8 @@ const EventMetadata = ({ eventData, onUpdate, className = '' }) => {
         <div>
           <label className="text-sm font-medium text-muted-foreground">Estimated Budget</label>
           <p className="text-foreground flex items-center space-x-2">
-            <Icon name="DollarSign" size={16} className="text-success" />
-            <span className="font-semibold">${eventData?.budget?.toLocaleString() || '0'}</span>
+            <Icon name="IndianRupee" size={16} className="text-success" />
+            <span className="font-semibold">₹{eventData?.budget?.toLocaleString() || '0'}</span>
           </p>
         </div>
 

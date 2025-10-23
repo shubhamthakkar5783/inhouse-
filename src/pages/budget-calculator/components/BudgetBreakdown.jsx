@@ -215,7 +215,7 @@ const BudgetBreakdown = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="flex items-center justify-center w-10 h-10 bg-success/10 rounded-lg">
-              <Icon name="DollarSign" size={20} className="text-success" />
+              <Icon name="IndianRupee" size={20} className="text-success" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-foreground">Budget Breakdown</h2>

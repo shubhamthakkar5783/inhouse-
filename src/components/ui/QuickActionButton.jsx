@@ -30,7 +30,7 @@ const QuickActionButton = ({ onAction, className = '' }) => {
       case '/budget-calculator':
         return [
           { 
-            icon: 'DollarSign', 
+            icon: 'IndianRupee', 
             label: 'Add Expense', 
             action: 'add-expense',
             color: 'bg-primary hover:bg-primary/90'

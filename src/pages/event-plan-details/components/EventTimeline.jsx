@@ -2,9 +2,43 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const EventTimeline = ({ timelineData, onUpdateActivity, onAddActivity, className = '' }) => {
+const EventTimeline = ({ timelineData, eventStartTime, onUpdateActivity, onAddActivity, className = '' }) => {
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [editingItem, setEditingItem] = useState(null);
+
+  const adjustedTimelineData = React.useMemo(() => {
+    if (!eventStartTime || !timelineData || timelineData.length === 0) {
+      return timelineData;
+    }
+
+    const [eventHour, eventMinute] = eventStartTime.split(':').map(Number);
+    const firstActivityTime = timelineData[0]?.startTime;
+    if (!firstActivityTime) return timelineData;
+
+    const [firstActivityHour, firstActivityMinute] = firstActivityTime.split(':').map(Number);
+
+    const eventStartMinutes = eventHour * 60 + eventMinute;
+    const firstActivityMinutes = firstActivityHour * 60 + firstActivityMinute;
+    const timeDifference = eventStartMinutes - firstActivityMinutes;
+
+    if (timeDifference === 0) {
+      return timelineData;
+    }
+
+    return timelineData.map(item => {
+      const [itemHour, itemMinute] = item.startTime.split(':').map(Number);
+      const itemMinutes = itemHour * 60 + itemMinute;
+      const newMinutes = itemMinutes + timeDifference;
+
+      const newHour = Math.floor(newMinutes / 60) % 24;
+      const newMinute = newMinutes % 60;
+
+      return {
+        ...item,
+        startTime: `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`
+      };
+    });
+  }, [timelineData, eventStartTime]);
 
   const toggleExpanded = (itemId) => {
     const newExpanded = new Set(expandedItems);
@@ -82,9 +116,9 @@ const EventTimeline = ({ timelineData, onUpdateActivity, onAddActivity, classNam
           <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-border" />
 
           <div className="space-y-6">
-            {timelineData?.map((item, index) => {
+            {adjustedTimelineData?.map((item, index) => {
               const isExpanded = expandedItems?.has(item?.id);
-              const isLast = index === timelineData?.length - 1;
+              const isLast = index === adjustedTimelineData?.length - 1;
 
               return (
                 <div key={item?.id} className="relative flex items-start space-x-4">

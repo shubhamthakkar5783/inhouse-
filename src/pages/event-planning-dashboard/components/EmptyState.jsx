@@ -15,7 +15,7 @@ const EmptyState = ({ onGetStarted }) => {
       description: 'Automatically create and organize tasks with role assignments'
     },
     {
-      icon: 'DollarSign',
+      icon: 'IndianRupee',
       title: 'Dynamic Budgeting',
       description: 'Get accurate cost estimates based on your event parameters'
     },

@@ -56,7 +56,7 @@ const QuickAccessPanel = ({ recentActivity = [], className = '' }) => {
       id: 3,
       action: 'Updated budget estimate',
       timestamp: new Date(Date.now() - 7200000)?.toISOString(),
-      icon: 'DollarSign',
+      icon: 'IndianRupee',
       type: 'warning'
     },
     {

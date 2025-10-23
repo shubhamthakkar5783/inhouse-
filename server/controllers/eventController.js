@@ -28,8 +28,8 @@ const eventController = {
     try {
       const {
         user_id = 1,
-        event_name,
-        event_type,
+        event_name = 'Untitled Event',
+        event_type = 'general',
         description,
         date,
         time,

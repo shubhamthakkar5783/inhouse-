@@ -518,6 +518,7 @@ const EventPlanDetails = () => {
               {viewMode === 'timeline' && (
                 <EventTimeline
                   timelineData={timelineData}
+                  eventStartTime={eventData?.time}
                   onUpdateActivity={handleUpdateActivity}
                   onAddActivity={handleAddActivity}
                 />

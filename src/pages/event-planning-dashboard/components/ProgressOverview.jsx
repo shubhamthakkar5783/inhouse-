@@ -40,7 +40,7 @@ const ProgressOverview = ({
     {
       label: 'Budget Planning',
       completed: budgetComplete,
-      icon: 'DollarSign',
+      icon: 'IndianRupee',
       description: 'Cost estimation'
     },
     {

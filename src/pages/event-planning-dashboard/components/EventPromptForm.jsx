@@ -214,7 +214,7 @@ You can write in English or Hindi. Feel free to use multiple lines and detailed 
             <span className="text-xs text-muted-foreground">Task Management</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Icon name="DollarSign" size={16} className="text-primary" />
+            <Icon name="IndianRupee" size={16} className="text-primary" />
             <span className="text-xs text-muted-foreground">Budget Estimation</span>
           </div>
         </div>
