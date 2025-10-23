@@ -6,6 +6,7 @@ import Input from '../../../components/ui/Input';
 import Image from '../../../components/AppImage';
 import { geminiService } from '../../../services/geminiService';
 import { supabase } from '../../../lib/supabaseClient';
+import { imageService } from '../../../services/imageService';
 
 const VisualAssetsTab = () => {
   const [selectedAssetType, setSelectedAssetType] = useState('poster');
@@ -14,6 +15,17 @@ const VisualAssetsTab = () => {
   const [selectedColor, setSelectedColor] = useState('blue');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedAssets, setGeneratedAssets] = useState([]);
+  const [eventType, setEventType] = useState('');
+
+  React.useEffect(() => {
+    const savedPrefs = localStorage.getItem('event_preferences');
+    if (savedPrefs) {
+      const prefs = JSON.parse(savedPrefs);
+      if (prefs.eventType) {
+        setEventType(prefs.eventType);
+      }
+    }
+  }, []);
 
   const assetTypeOptions = [
     { value: 'poster', label: 'Event Poster' },
@@ -74,29 +86,63 @@ const VisualAssetsTab = () => {
     setIsGenerating(true);
 
     try {
-      const posterContent = await geminiService.generatePosterContent(
-        customText,
-        selectedAssetType,
-        selectedStyle
-      );
+      const assetTypeLabel = assetTypeOptions.find(opt => opt.value === selectedAssetType)?.label || 'Visual Asset';
+      const styleLabel = styleOptions.find(opt => opt.value === selectedStyle)?.label || '';
+      const colorLabel = colorOptions.find(opt => opt.value === selectedColor)?.label || '';
 
-      await supabase
-        .from('ai_generated_content')
-        .insert({
-          content_type: 'poster',
-          platform: selectedAssetType,
-          prompt: customText,
-          generated_content: posterContent,
-          metadata: { style: selectedStyle, color: selectedColor }
-        });
+      const enhancedPrompt = customText;
 
-      const newAssets = mockAssets?.filter(asset =>
-        selectedAssetType === 'all' || asset?.type === selectedAssetType
-      );
-      setGeneratedAssets(newAssets);
+      const dimensions = {
+        poster: { width: 1200, height: 1800 },
+        banner: { width: 1200, height: 600 },
+        social: { width: 1080, height: 1080 },
+        flyer: { width: 1200, height: 1600 }
+      };
+
+      const dim = dimensions[selectedAssetType] || { width: 1024, height: 1024 };
+
+      const result = await imageService.generateImage(enhancedPrompt, {
+        width: dim.width,
+        height: dim.height,
+        eventType: eventType,
+        assetType: assetTypeLabel,
+        theme: `${styleLabel}, ${colorLabel}`
+      });
+
+      if (result.success) {
+        const newAsset = {
+          id: Date.now(),
+          type: selectedAssetType,
+          title: `${assetTypeLabel} - ${styleLabel}`,
+          thumbnail: result.data.imageUrl,
+          downloadUrl: result.data.imageUrl,
+          dimensions: `${dim.width}x${dim.height}px`,
+          format: 'PNG',
+          size: '~2 MB',
+          metadata: result.data.metadata
+        };
+
+        setGeneratedAssets(prev => [newAsset, ...prev]);
+
+        await supabase
+          .from('ai_generated_content')
+          .insert({
+            content_type: 'visual_asset',
+            platform: selectedAssetType,
+            prompt: customText,
+            generated_content: result.data.imageUrl,
+            metadata: {
+              style: selectedStyle,
+              color: selectedColor,
+              eventType: eventType,
+              assetType: assetTypeLabel,
+              dimensions: `${dim.width}x${dim.height}`
+            }
+          });
+      }
     } catch (error) {
-      console.error('Error generating poster:', error);
-      alert('Failed to generate poster content. Please try again.');
+      console.error('Error generating visual asset:', error);
+      alert('Failed to generate visual asset. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -155,13 +201,20 @@ const VisualAssetsTab = () => {
         </div>
 
         <div className="mb-4">
-          <Input
-            label="Custom Text"
-            type="text"
-            placeholder="Enter your event title or custom text"
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Description / Prompt
+          </label>
+          <textarea
+            placeholder="Describe the visual you want to generate... Be as detailed as possible. Include theme, colors, mood, and any specific elements you want."
             value={customText}
-            onChange={(e) => setCustomText(e?.target?.value)}
+            onChange={(e) => setCustomText(e.target.value)}
+            rows={4}
+            className="w-full px-4 py-3 border rounded-md bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y border-border"
+            style={{ whiteSpace: 'pre-wrap' }}
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Tip: The text from your event description can be used automatically. You can also add spaces and line breaks freely.
+          </p>
         </div>
 
         <Button

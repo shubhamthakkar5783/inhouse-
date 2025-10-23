@@ -94,13 +94,14 @@ export const validateEmail = (email) => {
   return { isValid: true, sanitizedEmail: email.toLowerCase().trim() };
 };
 
-export const sanitizeInput = (input) => {
+export const sanitizeInput = (input, preserveWhitespace = false) => {
   if (typeof input !== 'string') return input;
-  
-  return input
-    .trim()
+
+  let sanitized = input
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
     .replace(/javascript:/gi, '')
     .replace(/data:/gi, '');
+
+  return preserveWhitespace ? sanitized : sanitized.trim();
 };

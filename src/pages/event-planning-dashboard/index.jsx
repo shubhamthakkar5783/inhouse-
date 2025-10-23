@@ -22,6 +22,7 @@ const EventPlanningDashboard = () => {
   const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
   const [eventData, setEventData] = useState(null);
   const [generatedContent, setGeneratedContent] = useState([]);
+  const [selectedEventType, setSelectedEventType] = useState('');
 
   // Mock generated content data
   const mockGeneratedContent = [
@@ -271,6 +272,13 @@ const EventPlanningDashboard = () => {
 
   const handlePreferencesLoad = (loadedData) => {
     console.log('Preferences loaded:', loadedData);
+    if (loadedData?.event_type) {
+      setSelectedEventType(loadedData.event_type);
+    }
+  };
+
+  const handleEventTypeChange = (eventType) => {
+    setSelectedEventType(eventType);
   };
 
   const scrollToForm = () => {
@@ -338,12 +346,14 @@ const EventPlanningDashboard = () => {
                   <EventPreferencesPanel
                     onSave={handlePreferencesSave}
                     onLoad={handlePreferencesLoad}
+                    onEventTypeChange={handleEventTypeChange}
                   />
 
                   {/* Event Prompt Form */}
                   <EventPromptForm
                     onGenerate={handleGenerateEvent}
                     isGenerating={isGenerating}
+                    defaultEventType={selectedEventType}
                   />
                 </div>
               </div>

@@ -174,6 +174,23 @@ const setupDatabase = () => {
         }
       });
 
+      db.run(`CREATE TABLE IF NOT EXISTS generated_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id INTEGER,
+        prompt TEXT NOT NULL,
+        image_url TEXT NOT NULL,
+        metadata TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+      )`, (err) => {
+        if (err) {
+          console.error('✗ Error creating generated_images table:', err.message);
+          reject(err);
+        } else {
+          console.log('✓ Generated Images table created');
+        }
+      });
+
       db.get('SELECT COUNT(*) as count FROM users', [], (err, row) => {
         if (err) {
           console.error('✗ Error checking for sample data:', err.message);

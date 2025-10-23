@@ -8,6 +8,7 @@ const eventRoutes = require('./routes/eventRoutes');
 const budgetRoutes = require('./routes/budgetRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const preferencesRoutes = require('./routes/preferencesRoutes');
+const imageRoutes = require('./routes/imageRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +22,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/preferences', preferencesRoutes);
+app.use('/api/images', imageRoutes);
 
 app.get('/', (req, res) => {
   res.json({
@@ -32,7 +34,8 @@ app.get('/', (req, res) => {
       events: '/api/events',
       budgets: '/api/budgets',
       tasks: '/api/tasks',
-      preferences: '/api/preferences'
+      preferences: '/api/preferences',
+      images: '/api/images'
     }
   });
 });
@@ -66,6 +69,7 @@ const startServer = async () => {
       console.log(`  → Budgets:     http://localhost:${PORT}/api/budgets`);
       console.log(`  → Tasks:       http://localhost:${PORT}/api/tasks`);
       console.log(`  → Preferences: http://localhost:${PORT}/api/preferences`);
+      console.log(`  → Images:      http://localhost:${PORT}/api/images`);
       console.log('\n========================================\n');
     });
   } catch (error) {

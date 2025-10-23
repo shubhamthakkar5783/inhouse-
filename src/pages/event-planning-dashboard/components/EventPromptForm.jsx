@@ -4,11 +4,17 @@ import Button from '../../../components/ui/Button';
 import { validateEventDescription, sanitizeInput } from '../../../utils/validation';
 
 
-const EventPromptForm = ({ onGenerate, isGenerating }) => {
+const EventPromptForm = ({ onGenerate, isGenerating, defaultEventType }) => {
   const [prompt, setPrompt] = useState('');
-  const [eventType, setEventType] = useState('');
+  const [eventType, setEventType] = useState(defaultEventType || '');
   const [errors, setErrors] = useState({});
   const [isValidating, setIsValidating] = useState(false);
+
+  React.useEffect(() => {
+    if (defaultEventType && !eventType) {
+      setEventType(defaultEventType);
+    }
+  }, [defaultEventType]);
 
   const eventTypes = [
     'Corporate Conference',
@@ -44,7 +50,8 @@ const EventPromptForm = ({ onGenerate, isGenerating }) => {
     e?.preventDefault();
     if (validateForm()) {
       onGenerate({
-        prompt: prompt?.trim(),
+        prompt: prompt,
+        description: prompt,
         eventType,
         timestamp: new Date()?.toISOString()
       });
@@ -52,7 +59,7 @@ const EventPromptForm = ({ onGenerate, isGenerating }) => {
   };
 
   const handlePromptChange = (e) => {
-    const sanitizedValue = sanitizeInput(e?.target?.value);
+    const sanitizedValue = sanitizeInput(e?.target?.value, true);
     setPrompt(sanitizedValue);
     
     if (errors?.prompt) {
@@ -140,7 +147,7 @@ You can write in English or Hindi. Feel free to use multiple lines and detailed 
             className={`w-full px-4 py-3 border rounded-md bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y min-h-[200px] ${
               errors?.prompt ? 'border-error' : 'border-border'
             }`}
-            style={{ lineHeight: '1.6' }}
+            style={{ lineHeight: '1.6', whiteSpace: 'pre-wrap' }}
           />
           <div className="flex justify-between items-center mt-1">
             {errors?.prompt ? (

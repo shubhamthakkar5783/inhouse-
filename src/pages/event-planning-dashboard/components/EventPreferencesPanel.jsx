@@ -8,17 +8,31 @@ import TimePicker from '../../../components/ui/TimePicker';
 import { preferencesService } from '../../../services/preferencesService';
 import { cn } from '../../../utils/cn';
 
-const EventPreferencesPanel = ({ onSave, onLoad }) => {
+const EventPreferencesPanel = ({ onSave, onLoad, onEventTypeChange }) => {
   const [preferences, setPreferences] = useState({
     venue: '',
     numberOfPeople: 50,
     budget: 50000,
     eventDate: '',
     eventTime: '',
+    eventType: '',
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const eventTypeOptions = [
+    { value: 'Corporate Conference', label: 'Corporate Conference' },
+    { value: 'Wedding Celebration', label: 'Wedding Celebration' },
+    { value: 'Birthday Party', label: 'Birthday Party' },
+    { value: 'Product Launch', label: 'Product Launch' },
+    { value: 'Academic Seminar', label: 'Academic Seminar' },
+    { value: 'Networking Event', label: 'Networking Event' },
+    { value: 'Charity Fundraiser', label: 'Charity Fundraiser' },
+    { value: 'Music Concert', label: 'Music Concert' },
+    { value: 'Art Exhibition', label: 'Art Exhibition' },
+    { value: 'Sports Tournament', label: 'Sports Tournament' },
+  ];
 
   const venueOptions = [
     { value: 'taj-palace-lawns', label: 'Taj Palace Lawns - Luxury Garden with Gazebo' },
@@ -37,14 +51,19 @@ const EventPreferencesPanel = ({ onSave, onLoad }) => {
     try {
       const savedPreferences = await preferencesService.getLatestPreferences();
       if (savedPreferences) {
-        setPreferences({
+        const loadedPrefs = {
           venue: savedPreferences.venue || '',
           numberOfPeople: savedPreferences.number_of_people || 50,
           budget: savedPreferences.budget || 50000,
           eventDate: savedPreferences.event_date || '',
           eventTime: savedPreferences.event_time || '',
-        });
+          eventType: savedPreferences.event_type || '',
+        };
+        setPreferences(loadedPrefs);
         if (onLoad) onLoad(savedPreferences);
+        if (onEventTypeChange && loadedPrefs.eventType) {
+          onEventTypeChange(loadedPrefs.eventType);
+        }
       }
     } catch (error) {
       console.error('Error loading preferences:', error);
@@ -57,6 +76,10 @@ const EventPreferencesPanel = ({ onSave, onLoad }) => {
       [field]: value,
     }));
     setHasUnsavedChanges(true);
+
+    if (field === 'eventType' && onEventTypeChange) {
+      onEventTypeChange(value);
+    }
   };
 
   const handleSave = async () => {
@@ -95,6 +118,14 @@ const EventPreferencesPanel = ({ onSave, onLoad }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <Dropdown
+          label="Event Type"
+          value={preferences.eventType}
+          onChange={(value) => handleChange('eventType', value)}
+          options={eventTypeOptions}
+          placeholder="Select event type..."
+        />
+
         <Dropdown
           label="Venue"
           value={preferences.venue}
@@ -147,10 +178,16 @@ const EventPreferencesPanel = ({ onSave, onLoad }) => {
         </div>
       </div>
 
-      {preferences.venue && (
+      {(preferences.eventType || preferences.venue) && (
         <div className="pt-4 border-t border-gray-200">
           <h3 className="text-sm font-medium text-gray-700 mb-3">Selection Summary</h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {preferences.eventType && (
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-gray-500 mb-1">Event Type</p>
+                <p className="text-sm font-medium text-gray-900">{preferences.eventType}</p>
+              </div>
+            )}
             {preferences.venue && (
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-500 mb-1">Venue</p>
