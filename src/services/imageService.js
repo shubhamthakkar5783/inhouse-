@@ -14,24 +14,31 @@ class ImageService {
       seed = 42,
       eventType = '',
       assetType = '',
-      theme = ''
+      theme = '',
+      coupleNames = ''
     } = options;
 
-    let enhancedPrompt = prompt;
+    let enhancedPrompt = '';
 
-    if (eventType) {
-      enhancedPrompt = `${eventType} event: ${enhancedPrompt}`;
+    if (assetType && assetType.toLowerCase().includes('invitation') && coupleNames) {
+      enhancedPrompt = `Elegant Indian wedding invitation design for "${coupleNames}". Include the text "${coupleNames}" clearly in beautiful cursive gold font. Floral royal background, pastel theme, high detail, 8k resolution, ultra-realistic, cinematic lighting.`;
+    } else {
+      enhancedPrompt = prompt;
+
+      if (eventType) {
+        enhancedPrompt = `${eventType} event: ${enhancedPrompt}`;
+      }
+
+      if (assetType) {
+        enhancedPrompt = `${assetType} for ${enhancedPrompt}`;
+      }
+
+      if (theme) {
+        enhancedPrompt = `${enhancedPrompt} with ${theme} theme`;
+      }
+
+      enhancedPrompt += '. High detail, 8k resolution, ultra-realistic, cinematic lighting, professional quality.';
     }
-
-    if (assetType) {
-      enhancedPrompt = `${assetType} for ${enhancedPrompt}`;
-    }
-
-    if (theme) {
-      enhancedPrompt = `${enhancedPrompt} with ${theme} theme`;
-    }
-
-    enhancedPrompt += '. High detail, 8k resolution, ultra-realistic, cinematic lighting, professional quality.';
 
     const encodedPrompt = encodeURIComponent(enhancedPrompt);
     return `${this.pollinationsBaseUrl}/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}`;

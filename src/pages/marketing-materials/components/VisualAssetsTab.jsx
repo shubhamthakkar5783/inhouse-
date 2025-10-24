@@ -90,7 +90,16 @@ const VisualAssetsTab = () => {
       const styleLabel = styleOptions.find(opt => opt.value === selectedStyle)?.label || '';
       const colorLabel = colorOptions.find(opt => opt.value === selectedColor)?.label || '';
 
-      const enhancedPrompt = customText;
+      let enhancedPrompt = customText;
+
+      const coupleNamesMatch = customText.match(/(?:couple|names?|bride|groom)\s*:?\s*([\w\s&]+)/i);
+      const extractedNames = coupleNamesMatch ? coupleNamesMatch[1].trim() : '';
+
+      if (!enhancedPrompt.toLowerCase().includes('high detail') &&
+          !enhancedPrompt.toLowerCase().includes('8k') &&
+          !enhancedPrompt.toLowerCase().includes('resolution')) {
+        enhancedPrompt = `${enhancedPrompt}. ${styleLabel}, ${colorLabel}, elegant design`;
+      }
 
       const dimensions = {
         poster: { width: 1200, height: 1800 },
@@ -106,7 +115,8 @@ const VisualAssetsTab = () => {
         height: dim.height,
         eventType: eventType,
         assetType: assetTypeLabel,
-        theme: `${styleLabel}, ${colorLabel}`
+        theme: `${styleLabel}, ${colorLabel}`,
+        coupleNames: extractedNames
       });
 
       if (result.success) {
@@ -205,7 +215,7 @@ const VisualAssetsTab = () => {
             Description / Prompt
           </label>
           <textarea
-            placeholder="Describe the visual you want to generate... Be as detailed as possible. Include theme, colors, mood, and any specific elements you want."
+            placeholder="Describe the visual you want to generate in detail. For wedding invitations, include couple names for personalization. Example: 'Elegant Indian wedding invitation for Rahul & Priya with floral background and gold accents'"
             value={customText}
             onChange={(e) => setCustomText(e.target.value)}
             rows={4}
@@ -213,7 +223,7 @@ const VisualAssetsTab = () => {
             style={{ whiteSpace: 'pre-wrap' }}
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Tip: The text from your event description can be used automatically. You can also add spaces and line breaks freely.
+            Tip: Be specific about style, colors, mood, and elements. For invitations, mention couple names to include them in the design.
           </p>
         </div>
 

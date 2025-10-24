@@ -56,8 +56,8 @@ const TaskCard = ({
   };
 
   return (
-    <div 
-      className={`bg-card border border-border rounded-lg p-4 shadow-card hover:shadow-modal transition-all duration-200 cursor-pointer ${
+    <div
+      className={`bg-card border border-border rounded-lg p-4 shadow-card hover:shadow-modal transition-all duration-200 ${
         isDragging ? 'opacity-50 rotate-2' : ''
       } ${className}`}
       onClick={toggleExpanded}

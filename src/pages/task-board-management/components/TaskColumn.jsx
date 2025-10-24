@@ -145,12 +145,13 @@ const TaskColumn = ({
                 if (e.dataTransfer) {
                   e.dataTransfer.setData('text/plain', task?.id);
                   e.dataTransfer.effectAllowed = 'move';
+                  e.currentTarget.style.opacity = '0.5';
                 }
               }}
               onDragEnd={(e) => {
-                e.preventDefault();
+                e.currentTarget.style.opacity = '1';
               }}
-              className="group cursor-move"
+              className="group"
             >
               <TaskCard
                 task={task}

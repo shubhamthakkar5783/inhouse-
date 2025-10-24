@@ -105,12 +105,16 @@ const QuickAccessPanel = ({ recentActivity = [], className = '' }) => {
         </div>
         
         <div className="space-y-3">
-          {quickActions?.map((action, index) => (
+          {quickActions?.map((action, index) => {
+            const isActive = window.location.pathname === action?.path;
+            return (
             <Button
               key={index}
               variant="ghost"
               onClick={() => navigate(action?.path)}
-              className="w-full justify-start p-3 h-auto hover:bg-muted/50"
+              className={`w-full justify-start p-3 h-auto hover:bg-muted/50 transition-colors ${
+                isActive ? 'bg-muted/50 border-l-2 border-primary' : ''
+              }`}
             >
               <div className="flex items-center space-x-3 w-full">
                 <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${action?.color}`}>
@@ -123,7 +127,8 @@ const QuickAccessPanel = ({ recentActivity = [], className = '' }) => {
                 <Icon name="ChevronRight" size={16} className="text-muted-foreground" />
               </div>
             </Button>
-          ))}
+          );
+          })}
         </div>
       </div>
       {/* Recent Activity */}
