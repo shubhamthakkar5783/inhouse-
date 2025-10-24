@@ -81,24 +81,27 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
-            {navigationItems?.map((item) => (
-              <div key={item?.path} className="relative group">
-                <a
-                  href={item?.path}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-smooth hover:bg-muted ${
-                    isActivePath(item?.path)
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Icon name={item?.icon} size={16} />
-                  <span>{item?.label}</span>
-                </a>
-                <div className="opacity-0 group-hover:opacity-100 absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-1300 bg-card border border-border rounded shadow-card px-3 py-2 text-xs text-foreground whitespace-nowrap pointer-events-none transition-opacity duration-200">
-                  {item?.tooltip}
+            {navigationItems?.map((item) => {
+              const isActive = isActivePath(item?.path);
+              return (
+                <div key={item?.path} className="relative group">
+                  <a
+                    href={item?.path}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-smooth ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <Icon name={item?.icon} size={16} />
+                    <span>{item?.label}</span>
+                  </a>
+                  <div className="opacity-0 group-hover:opacity-100 absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-1300 bg-card border border-border rounded shadow-card px-3 py-2 text-xs text-foreground whitespace-nowrap pointer-events-none transition-opacity duration-200">
+                    {item?.tooltip}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {user && (
               <Button
                 variant="ghost"
@@ -150,24 +153,27 @@ const Header = () => {
             </div>
             <nav className="p-6">
               <div className="space-y-2">
-                {navigationItems?.map((item) => (
-                  <a
-                    key={item?.path}
-                    href={item?.path}
-                    onClick={closeMobileMenu}
-                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-smooth hover:bg-muted ${
-                      isActivePath(item?.path)
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <Icon name={item?.icon} size={20} />
-                    <div className="flex flex-col">
-                      <span>{item?.label}</span>
-                      <span className="text-xs opacity-75">{item?.tooltip}</span>
-                    </div>
-                  </a>
-                ))}
+                {navigationItems?.map((item) => {
+                  const isActive = isActivePath(item?.path);
+                  return (
+                    <a
+                      key={item?.path}
+                      href={item?.path}
+                      onClick={closeMobileMenu}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-smooth ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <Icon name={item?.icon} size={20} />
+                      <div className="flex flex-col">
+                        <span>{item?.label}</span>
+                        <span className="text-xs opacity-75">{item?.tooltip}</span>
+                      </div>
+                    </a>
+                  );
+                })}
                 {user && (
                   <Button
                     variant="destructive"
