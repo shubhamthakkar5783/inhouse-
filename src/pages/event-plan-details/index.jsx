@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../../components/ui/Header';
 import QuickActionButton from '../../components/ui/QuickActionButton';
 import NotificationToast, { useNotifications } from '../../components/ui/NotificationToast';
@@ -8,14 +9,17 @@ import PlanActions from './components/PlanActions';
 import ProgressTracker from './components/ProgressTracker';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
-import { preferencesService } from '../../services/preferencesService';
+import { eventService } from '../../services/eventService';
+import { supabase } from '../../lib/supabaseClient';
 
 const EventPlanDetails = () => {
+  const navigate = useNavigate();
   const [eventData, setEventData] = useState(null);
   const [timelineData, setTimelineData] = useState([]);
   const [progressData, setProgressData] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState('timeline');
+  const [generatedPlan, setGeneratedPlan] = useState(null);
 
   const { notifications, showSuccess, showError, showInfo, dismissNotification } = useNotifications();
 
@@ -36,158 +40,84 @@ const EventPlanDetails = () => {
       setIsLoading(true);
 
       try {
-        const preferences = await preferencesService.getLatestPreferences();
+        const events = await eventService.getAllEvents();
 
-        const savedEventData = localStorage.getItem('eventPlanningData');
-        let eventDataToUse = null;
-
-        if (savedEventData) {
-          try {
-            eventDataToUse = JSON.parse(savedEventData);
-          } catch (parseError) {
-            console.error('Error parsing saved event data:', parseError);
-            localStorage.removeItem('eventPlanningData');
-          }
+        if (!events || events.length === 0) {
+          showError('No events found. Please create an event first.');
+          setTimeout(() => navigate('/event-planning-dashboard'), 2000);
+          return;
         }
 
+        const latestEvent = events[0];
+
+        const { data: aiContent, error: aiError } = await supabase
+          .from('ai_generated_content')
+          .select('*')
+          .eq('event_id', latestEvent.id)
+          .eq('content_type', 'event_plan')
+          .order('created_at', { ascending: false })
+          .maybeSingle();
+
+        if (aiError) {
+          console.error('Error fetching AI content:', aiError);
+        }
+
+        const generatedContent = aiContent?.generated_content;
+        setGeneratedPlan(generatedContent);
+
         const mockEventData = {
-          id: eventDataToUse?.id || 'evt_001',
-          name: eventDataToUse?.eventType || preferences?.event_type || 'Annual Tech Conference 2025',
-          date: preferences?.event_date || '2025-03-15',
-          time: preferences?.event_time || '09:00',
-          location: preferences?.venue ? getVenueName(preferences.venue) : 'Grand Convention Center, San Francisco',
-          attendees: preferences?.number_of_people || 500,
-          budget: preferences?.budget || 75000,
+          id: latestEvent.id,
+          name: latestEvent.eventName || latestEvent.eventType || 'Event',
+          date: latestEvent.date || '2025-03-15',
+          time: latestEvent.time || '09:00',
+          location: latestEvent.location ? getVenueName(latestEvent.location) : (latestEvent.venueType || 'TBD'),
+          attendees: latestEvent.audienceSize || 50,
+          budget: latestEvent.budget || 10000,
           status: 'planning',
-          description: eventDataToUse?.prompt || 'A comprehensive technology conference featuring industry leaders and innovative solutions.',
-          contacts: [
+          description: latestEvent.description || 'Event description',
+          contacts: generatedContent?.contacts || [
             {
-              name: 'Sarah Johnson',
+              name: 'Event Manager',
               role: 'Event Manager',
-              phone: '+1 (555) 123-4567',
-              email: 'sarah.johnson@techconf.com'
-            },
-            {
-              name: 'Michael Chen',
-              role: 'Technical Coordinator',
-              phone: '+1 (555) 234-5678',
-              email: 'michael.chen@techconf.com'
-            },
-            {
-              name: 'Emily Rodriguez',
-              role: 'Marketing Lead',
-              phone: '+1 (555) 345-6789',
-              email: 'emily.rodriguez@techconf.com'
+              phone: 'TBD',
+              email: 'TBD'
             }
           ]
         };
 
-        const mockTimelineData = [
-          {
-            id: 'tl_001',
-            title: 'Venue Setup & Registration',
-            type: 'setup',
-            startTime: '07:00',
-            duration: 120,
-            location: 'Main Hall',
-            attendees: 10,
-            description: 'Complete venue setup including registration desks, signage, and technical equipment testing.',
-            resources: ['Registration desks', 'Welcome banners', 'Audio/Visual equipment', 'Name badges', 'Welcome packets'],
-            assignedTo: ['Setup Team', 'Registration Staff'],
-            notes: 'Ensure all technical equipment is tested 30 minutes before event start.'
-          },
-          {
-            id: 'tl_002',
-            title: 'Opening Keynote',
-            type: 'presentation',
-            startTime: '09:00',
-            duration: 60,
-            location: 'Main Auditorium',
-            attendees: 500,
-            description: 'Welcome address and opening keynote presentation by industry leader.',
-            resources: ['Main stage setup', 'Wireless microphone', 'Presentation screen', 'Lighting system'],
-            assignedTo: ['AV Team', 'Stage Manager'],
-            notes: 'Speaker needs wireless lapel mic and clicker for slides.'
-          },
-          {
-            id: 'tl_003',
-            title: 'Networking Coffee Break',
-            type: 'break',
-            startTime: '10:00',
-            duration: 30,
-            location: 'Exhibition Hall',
-            attendees: 500,
-            description: 'Coffee, tea, and light refreshments with networking opportunities.',
-            resources: ['Coffee stations', 'Pastries', 'High-top tables', 'Networking materials'],
-            assignedTo: ['Catering Team', 'Event Staff'],
-            notes: 'Ensure dietary restrictions are accommodated with alternative options.'
-          },
-          {
-            id: 'tl_004',
-            title: 'Technical Workshops',
-            type: 'presentation',
-            startTime: '10:30',
-            duration: 90,
-            location: 'Breakout Rooms A, B, C',
-            attendees: 150,
-            description: 'Parallel technical workshops on AI, Cloud Computing, and Cybersecurity.',
-            resources: ['Laptops for hands-on sessions', 'Workshop materials', 'Whiteboards', 'Projectors'],
-            assignedTo: ['Workshop Facilitators', 'Technical Support'],
-            notes: 'Each room needs dedicated technical support staff.'
-          },
-          {
-            id: 'tl_005',
-            title: 'Lunch & Exhibition',
-            type: 'meal',
-            startTime: '12:00',
-            duration: 60,
-            location: 'Exhibition Hall',
-            attendees: 500,
-            description: 'Buffet lunch with sponsor exhibition booths and product demonstrations.',
-            resources: ['Buffet stations', 'Exhibition booths', 'Demo equipment', 'Seating areas'],
-            assignedTo: ['Catering Team', 'Exhibition Coordinators'],
-            notes: 'Coordinate with sponsors for booth setup and demo schedules.'
-          },
-          {
-            id: 'tl_006',
-            title: 'Panel Discussion',
-            type: 'presentation',
-            startTime: '13:00',
-            duration: 75,
-            location: 'Main Auditorium',
-            attendees: 500,
-            description: 'Industry expert panel on future technology trends and innovations.',
-            resources: ['Panel table setup', 'Multiple microphones', 'Moderator materials'],
-            assignedTo: ['Moderator', 'AV Team'],
-            notes: 'Prepare backup questions for moderator in case of time gaps.'
-          },
-          {
-            id: 'tl_007',
-            title: 'Closing Ceremony & Awards',
-            type: 'presentation',
-            startTime: '14:15',
-            duration: 45,
-            location: 'Main Auditorium',
-            attendees: 500,
-            description: 'Award presentations, closing remarks, and next year announcements.',
-            resources: ['Award trophies', 'Presentation materials', 'Photography equipment'],
-            assignedTo: ['Event Manager', 'Photography Team'],
-            notes: 'Ensure all award recipients are present and prepared.'
-          },
-          {
-            id: 'tl_008',
-            title: 'Venue Cleanup',
-            type: 'cleanup',
-            startTime: '15:00',
-            duration: 120,
-            location: 'All Areas',
-            attendees: 15,
-            description: 'Complete venue cleanup, equipment breakdown, and material collection.',
-            resources: ['Cleaning supplies', 'Storage containers', 'Transportation'],
-            assignedTo: ['Cleanup Crew', 'Equipment Team'],
-            notes: 'Coordinate with venue management for final inspection.'
-          }
-        ];
+        let mockTimelineData = [];
+
+        if (generatedContent?.timeline && Array.isArray(generatedContent.timeline)) {
+          mockTimelineData = generatedContent.timeline.map((item, index) => ({
+            id: `tl_${index + 1}`,
+            title: item.activity || item.title || 'Activity',
+            type: item.type || 'general',
+            startTime: item.time || `${9 + index}:00`,
+            duration: item.duration || 60,
+            location: item.location || mockEventData.location,
+            attendees: item.attendees || mockEventData.attendees,
+            description: item.description || item.details || '',
+            resources: item.resources || [],
+            assignedTo: item.assignedTo || item.assigned_to || [],
+            notes: item.notes || ''
+          }));
+        } else {
+          mockTimelineData = [
+            {
+              id: 'tl_001',
+              title: 'Event Setup',
+              type: 'setup',
+              startTime: mockEventData.time || '09:00',
+              duration: 60,
+              location: mockEventData.location,
+              attendees: mockEventData.attendees,
+              description: 'Initial setup and preparation',
+              resources: [],
+              assignedTo: [],
+              notes: 'Generated event plan - timeline details pending'
+            }
+          ];
+        }
 
         const mockProgressData = {
           phases: [
@@ -195,39 +125,39 @@ const EventPlanDetails = () => {
               id: 'planning',
               status: 'completed',
               progress: 100,
-              completedTasks: 12,
-              totalTasks: 12
+              completedTasks: 1,
+              totalTasks: 1
             },
             {
               id: 'preparation',
               status: 'in-progress',
-              progress: 65,
-              completedTasks: 8,
-              totalTasks: 15
+              progress: 50,
+              completedTasks: 0,
+              totalTasks: generatedContent?.tasks?.length || 5
             },
             {
               id: 'execution',
               status: 'pending',
               progress: 0,
               completedTasks: 0,
-              totalTasks: 8
+              totalTasks: mockTimelineData.length
             },
             {
               id: 'followup',
               status: 'pending',
               progress: 0,
               completedTasks: 0,
-              totalTasks: 5
+              totalTasks: 3
             }
           ],
-          completedTasks: 20,
-          totalTasks: 40,
-          daysRemaining: 45,
-          nextActions: [
-            'Finalize catering menu and dietary options',
-            'Confirm speaker travel arrangements',
-            'Complete venue layout and seating plan',
-            'Send final event details to all attendees'
+          completedTasks: 1,
+          totalTasks: (generatedContent?.tasks?.length || 5) + mockTimelineData.length + 3,
+          daysRemaining: latestEvent.date ? Math.ceil((new Date(latestEvent.date) - new Date()) / (1000 * 60 * 60 * 24)) : 30,
+          nextActions: generatedContent?.tasks?.slice(0, 4)?.map(t => t.task || t.title || t) || [
+            'Review event plan details',
+            'Confirm venue and arrangements',
+            'Prepare materials',
+            'Send invitations'
           ]
         };
 
@@ -235,16 +165,11 @@ const EventPlanDetails = () => {
         setTimelineData(mockTimelineData);
         setProgressData(mockProgressData);
 
-        if (preferences) {
-          showInfo('Event plan loaded with preferences from dashboard');
-        } else {
-          showInfo('Event plan loaded successfully');
-        }
+        showSuccess('Event plan loaded successfully');
       } catch (error) {
         console.error('Error loading event data:', error);
-        showError('Failed to load event plan. Using default data.');
-        
-        // Fallback to basic mock data
+        showError('Failed to load event plan.');
+
         setEventData({
           id: 'evt_001',
           name: 'Sample Event',
@@ -270,31 +195,21 @@ const EventPlanDetails = () => {
     };
 
     loadEventData();
-  }, []);
+  }, [navigate, showError, showSuccess]);
 
-  const handleUpdateEvent = (updatedData) => {
+  const handleUpdateEvent = async (updatedData) => {
     try {
+      await eventService.updateEvent(eventData.id, {
+        eventName: updatedData.name,
+        date: updatedData.date,
+        time: updatedData.time,
+        location: updatedData.location,
+        audienceSize: updatedData.attendees,
+        budget: updatedData.budget,
+        description: updatedData.description
+      });
+
       setEventData(updatedData);
-      
-      // Save updated data to localStorage
-      const currentSavedData = localStorage.getItem('eventPlanningData');
-      if (currentSavedData) {
-        try {
-          const parsedData = JSON.parse(currentSavedData);
-          const updatedSavedData = {
-            ...parsedData,
-            eventName: updatedData.name,
-            eventDate: updatedData.date,
-            eventTime: updatedData.time,
-            eventLocation: updatedData.location,
-            expectedAttendees: updatedData.attendees
-          };
-          localStorage.setItem('eventPlanningData', JSON.stringify(updatedSavedData));
-        } catch (error) {
-          console.error('Error updating saved data:', error);
-        }
-      }
-      
       showSuccess('Event details updated successfully');
     } catch (error) {
       console.error('Error updating event:', error);
@@ -304,8 +219,8 @@ const EventPlanDetails = () => {
 
   const handleUpdateActivity = (activityId, updatedActivity) => {
     try {
-      setTimelineData(prev => 
-        prev?.map(item => 
+      setTimelineData(prev =>
+        prev?.map(item =>
           item?.id === activityId ? { ...item, ...updatedActivity, updatedAt: new Date()?.toISOString() } : item
         )
       );
@@ -332,7 +247,7 @@ const EventPlanDetails = () => {
         notes: '',
         createdAt: new Date()?.toISOString()
       };
-      
+
       setTimelineData(prev => [...prev, newActivity]);
       showSuccess('New activity added to timeline');
     } catch (error) {
@@ -344,21 +259,20 @@ const EventPlanDetails = () => {
   const handleExport = async (format) => {
     try {
       showInfo(`Exporting plan as ${format?.toUpperCase()}...`);
-      
+
       const exportData = {
         eventData,
         timelineData,
         progressData,
+        generatedPlan,
         exportFormat: format,
         exportedAt: new Date()?.toISOString()
       };
-      
-      // Simulate export process
+
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Create and download file
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-        type: format === 'json' ? 'application/json' : 'text/plain' 
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: format === 'json' ? 'application/json' : 'text/plain'
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -368,7 +282,7 @@ const EventPlanDetails = () => {
       a?.click();
       document.body?.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       showSuccess(`Plan exported as ${format?.toUpperCase()} successfully`);
     } catch (error) {
       console.error('Export failed:', error);
@@ -379,17 +293,15 @@ const EventPlanDetails = () => {
   const handleRegenerate = async () => {
     try {
       showInfo('Generating alternative plan...');
-      
-      // Simulate regeneration process
+
       await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Add some variation to the timeline
+
       const regeneratedTimeline = timelineData?.map(item => ({
         ...item,
         duration: item.duration + (Math.random() > 0.5 ? 15 : -15),
         updatedAt: new Date()?.toISOString()
       }));
-      
+
       setTimelineData(regeneratedTimeline);
       showSuccess('Alternative plan generated successfully');
     } catch (error) {
@@ -400,7 +312,6 @@ const EventPlanDetails = () => {
 
   const handleCreateTasks = () => {
     try {
-      // Save current event context for task creation
       const taskContext = {
         eventId: eventData?.id,
         eventName: eventData?.name,
@@ -412,9 +323,9 @@ const EventPlanDetails = () => {
           assignedTo: item.assignedTo
         }))
       };
-      
+
       localStorage.setItem('taskCreationContext', JSON.stringify(taskContext));
-      
+
       showSuccess('Redirecting to task board...');
       setTimeout(() => {
         window.location.href = '/task-board-management';
@@ -470,7 +381,6 @@ const EventPlanDetails = () => {
       <Header />
       <div className="pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Page Header */}
           <div className="mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -479,7 +389,7 @@ const EventPlanDetails = () => {
                   Comprehensive timeline and details for your event planning
                 </p>
               </div>
-              
+
               <div className="flex items-center space-x-2 mt-4 sm:mt-0">
                 {viewModeOptions?.map((option) => (
                   <Button
@@ -497,15 +407,13 @@ const EventPlanDetails = () => {
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Left Sidebar - Event Metadata & Actions */}
             <div className="lg:col-span-1 space-y-6">
-              <EventMetadata 
+              <EventMetadata
                 eventData={eventData}
                 onUpdate={handleUpdateEvent}
               />
-              
+
               <PlanActions
                 onExport={handleExport}
                 onRegenerate={handleRegenerate}
@@ -513,7 +421,6 @@ const EventPlanDetails = () => {
               />
             </div>
 
-            {/* Main Content Area - Timeline */}
             <div className="lg:col-span-2">
               {viewMode === 'timeline' && (
                 <EventTimeline
@@ -523,7 +430,7 @@ const EventPlanDetails = () => {
                   onAddActivity={handleAddActivity}
                 />
               )}
-              
+
               {viewMode === 'gantt' && (
                 <div className="bg-card rounded-lg border border-border p-8 shadow-card text-center">
                   <Icon name="BarChart3" size={48} className="text-muted-foreground mx-auto mb-4" />
@@ -541,7 +448,7 @@ const EventPlanDetails = () => {
                   </Button>
                 </div>
               )}
-              
+
               {viewMode === 'calendar' && (
                 <div className="bg-card rounded-lg border border-border p-8 shadow-card text-center">
                   <Icon name="Calendar" size={48} className="text-muted-foreground mx-auto mb-4" />
@@ -561,13 +468,11 @@ const EventPlanDetails = () => {
               )}
             </div>
 
-            {/* Right Sidebar - Progress Tracker */}
             <div className="lg:col-span-1">
               <ProgressTracker progressData={progressData} />
             </div>
           </div>
 
-          {/* Mobile-Optimized Bottom Actions */}
           <div className="lg:hidden mt-8 p-4 bg-card rounded-lg border border-border shadow-card">
             <h3 className="text-sm font-medium text-foreground mb-3">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
@@ -611,9 +516,7 @@ const EventPlanDetails = () => {
           </div>
         </div>
       </div>
-      {/* Quick Action Button */}
       <QuickActionButton onAction={handleQuickAction} />
-      {/* Notifications */}
       <NotificationToast
         notifications={notifications}
         onDismiss={dismissNotification}
