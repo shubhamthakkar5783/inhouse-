@@ -10,7 +10,7 @@ import ProgressTracker from './components/ProgressTracker';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import { eventService } from '../../services/eventService';
-import { supabase } from '../../lib/supabaseClient';
+import { aiContentService } from '../../services/aiContentService';
 
 const EventPlanDetails = () => {
   const navigate = useNavigate();
@@ -50,19 +50,22 @@ const EventPlanDetails = () => {
 
         const latestEvent = events[0];
 
-        const { data: aiContent, error: aiError } = await supabase
-          .from('ai_generated_content')
-          .select('*')
-          .eq('event_id', latestEvent.id)
-          .eq('content_type', 'event_plan')
-          .order('created_at', { ascending: false })
-          .maybeSingle();
+        const aiContent = await aiContentService.getContentByEventIdAndType(
+          latestEvent.id,
+          'event_plan'
+        );
 
-        if (aiError) {
-          console.error('Error fetching AI content:', aiError);
+        let generatedContent = null;
+        if (aiContent) {
+          try {
+            generatedContent = typeof aiContent.generated_content === 'string'
+              ? JSON.parse(aiContent.generated_content)
+              : aiContent.generated_content;
+          } catch (error) {
+            console.error('Error parsing generated content:', error);
+            generatedContent = aiContent.generated_content;
+          }
         }
-
-        const generatedContent = aiContent?.generated_content;
         setGeneratedPlan(generatedContent);
 
         const mockEventData = {

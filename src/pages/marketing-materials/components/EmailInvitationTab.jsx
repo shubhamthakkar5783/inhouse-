@@ -6,7 +6,7 @@ import Select from '../../../components/ui/Select';
 import { EmailService } from '../../../services/emailService';
 import { validateEmail } from '../../../utils/validation';
 import { geminiService } from '../../../services/geminiService';
-import { supabase } from '../../../lib/supabaseClient';
+import { aiContentService } from '../../../services/aiContentService';
 
 const EmailInvitationTab = () => {
   const [selectedTone, setSelectedTone] = useState('formal');
@@ -53,13 +53,12 @@ const EmailInvitationTab = () => {
         selectedTone
       );
 
-      await supabase
-        .from('ai_generated_content')
-        .insert({
-          content_type: 'email',
-          platform: 'email',
-          prompt: eventDescription,
-          generated_content: emailData,
+      await aiContentService.createContent({
+        event_id: null,
+        content_type: 'email',
+        platform: 'email',
+        prompt: eventDescription,
+        generated_content: emailData,
           metadata: { tone: selectedTone, template: selectedTemplate }
         });
 

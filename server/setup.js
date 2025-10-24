@@ -191,6 +191,26 @@ const setupDatabase = () => {
         }
       });
 
+      db.run(`CREATE TABLE IF NOT EXISTS ai_generated_content (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id INTEGER NOT NULL,
+        content_type TEXT NOT NULL,
+        prompt TEXT,
+        generated_content TEXT NOT NULL,
+        metadata TEXT,
+        platform TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+      )`, (err) => {
+        if (err) {
+          console.error('✗ Error creating ai_generated_content table:', err.message);
+          reject(err);
+        } else {
+          console.log('✓ AI Generated Content table created');
+        }
+      });
+
       db.get('SELECT COUNT(*) as count FROM users', [], (err, row) => {
         if (err) {
           console.error('✗ Error checking for sample data:', err.message);

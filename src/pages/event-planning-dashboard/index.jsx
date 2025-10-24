@@ -12,7 +12,7 @@ import EmptyState from './components/EmptyState';
 import EventPreferencesPanel from './components/EventPreferencesPanel';
 import { eventService } from '../../services/eventService';
 import { geminiService } from '../../services/geminiService';
-import { supabase } from '../../lib/supabaseClient';
+import { aiContentService } from '../../services/aiContentService';
 
 const EventPlanningDashboard = () => {
   const navigate = useNavigate();
@@ -145,17 +145,13 @@ const EventPlanningDashboard = () => {
         duration: formData.duration
       });
 
-      const { data: aiContent } = await supabase
-        .from('ai_generated_content')
-        .insert({
-          event_id: savedEvent.id,
-          content_type: 'event_plan',
-          prompt: formData.prompt || formData.description,
-          generated_content: eventPlan,
-          metadata: { eventType: formData.eventType }
-        })
-        .select()
-        .maybeSingle();
+      const aiContent = await aiContentService.createContent({
+        event_id: savedEvent.id,
+        content_type: 'event_plan',
+        prompt: formData.prompt || formData.description,
+        generated_content: eventPlan,
+        metadata: { eventType: formData.eventType }
+      });
 
       const generatedContentFromAI = [
         {

@@ -3,7 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
 import { geminiService } from '../../../services/geminiService';
-import { supabase } from '../../../lib/supabaseClient';
+import { aiContentService } from '../../../services/aiContentService';
 
 const SocialMediaTab = () => {
   const [selectedPlatform, setSelectedPlatform] = useState('instagram');
@@ -86,13 +86,12 @@ const SocialMediaTab = () => {
         selectedPlatform
       );
 
-      await supabase
-        .from('ai_generated_content')
-        .insert({
-          content_type: 'social_media_caption',
-          platform: selectedPlatform,
-          prompt: eventDescription,
-          generated_content: captionData,
+      await aiContentService.createContent({
+        event_id: null,
+        content_type: 'social_media_caption',
+        platform: selectedPlatform,
+        prompt: eventDescription,
+        generated_content: captionData,
           metadata: { platform: selectedPlatform }
         });
 

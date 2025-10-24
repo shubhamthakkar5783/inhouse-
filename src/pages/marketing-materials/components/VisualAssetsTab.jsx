@@ -5,7 +5,7 @@ import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
 import Image from '../../../components/AppImage';
 import { geminiService } from '../../../services/geminiService';
-import { supabase } from '../../../lib/supabaseClient';
+import { aiContentService } from '../../../services/aiContentService';
 import { imageService } from '../../../services/imageService';
 
 const VisualAssetsTab = () => {
@@ -134,13 +134,12 @@ const VisualAssetsTab = () => {
 
         setGeneratedAssets(prev => [newAsset, ...prev]);
 
-        await supabase
-          .from('ai_generated_content')
-          .insert({
-            content_type: 'visual_asset',
-            platform: selectedAssetType,
-            prompt: customText,
-            generated_content: result.data.imageUrl,
+        await aiContentService.createContent({
+          event_id: null,
+          content_type: 'visual_asset',
+          platform: selectedAssetType,
+          prompt: customText,
+          generated_content: result.data.imageUrl,
             metadata: {
               style: selectedStyle,
               color: selectedColor,
